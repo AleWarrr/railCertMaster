@@ -4,7 +4,6 @@ modules = ["nodejs-20"]
 channel = "stable-24_05"
 
 [workflows]
-runButton = "Electron Dev"
 
 [[workflows.workflow]]
 name = "Project"
@@ -80,3 +79,7 @@ args = "electron ."
 
 [deployment]
 run = ["sh", "-c", "npm install && npm start"]
+
+[[ports]]
+localPort = 3000
+externalPort = 80
