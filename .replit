@@ -4,7 +4,7 @@ modules = ["nodejs-20"]
 channel = "stable-24_05"
 
 [workflows]
-runButton = "Electron App"
+runButton = "Electron Dev"
 
 [[workflows.workflow]]
 name = "Project"
@@ -56,6 +56,23 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npm install"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "electron ."
+
+[[workflows.workflow]]
+name = "Electron Dev"
+author = 40771362
+mode = "parallel"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm install"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run start &"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
