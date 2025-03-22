@@ -13,26 +13,11 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Railway Certification App"
+args = "railway_cert_app"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "railway_cert_app"
-
-[[workflows.workflow]]
-name = "Railway Certification App"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npm install && npm start"
-waitForPort = 5000
+args = "API Server"
 
 [[workflows.workflow]]
 name = "railway_cert_app"
@@ -79,6 +64,21 @@ args = "npm run start &"
 task = "shell.exec"
 args = "electron ."
 
+[[workflows.workflow]]
+name = "API Server"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node server.js"
+waitForPort = 5000
+
 [deployment]
 run = ["sh", "-c", "npm install && npm start"]
 
@@ -89,3 +89,7 @@ externalPort = 80
 [[ports]]
 localPort = 3001
 externalPort = 3001
+
+[[ports]]
+localPort = 5000
+externalPort = 5000
