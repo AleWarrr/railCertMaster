@@ -23,7 +23,7 @@ import {
   Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { Controller } from 'react-hook-form';
-import { getCompanies, getCustomers, getInspectors, getNeedleTypes } from '../utils/api';
+import { getCompanies, getCustomers, getInspectors } from '../utils/api';
 
 /**
  * NeedlesForm - Specialized component for handling needle material certifications
@@ -33,7 +33,6 @@ const NeedlesForm = ({ control, errors, watch, setValue, getMaterialTemplate, on
   const [companies, setCompanies] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [inspectors, setInspectors] = useState([]);
-  const [needleTypes, setNeedleTypes] = useState([]);
   const [selectedCompanyId, setSelectedCompanyId] = useState(null);
   const [selectedCustomerId, setSelectedCustomerId] = useState(null);
   const [selectedInspectorId, setSelectedInspectorId] = useState(null);
@@ -41,24 +40,31 @@ const NeedlesForm = ({ control, errors, watch, setValue, getMaterialTemplate, on
   const [error, setError] = useState(null);
   const [selectedNeedleTypes, setSelectedNeedleTypes] = useState([]);
   
+  // Built-in needle types - eliminates the need for API fetch
+  const needleTypes = [
+    { id: 1, name: 'Type A - Standard Weld', specification: 'RS-2023-A' },
+    { id: 2, name: 'Type B - Heavy Duty Weld', specification: 'RS-2023-B' },
+    { id: 3, name: 'Type C - Precision Weld', specification: 'RS-2023-C' },
+    { id: 4, name: 'Type D - High Tensile Weld', specification: 'RS-2023-D' },
+    { id: 5, name: 'Type E - Special Purpose Weld', specification: 'RS-2023-E' }
+  ];
+  
   // Load data from the database
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        // Fetch companies, customers, inspectors, and needle types in parallel
-        const [companiesRes, customersRes, inspectorsRes, needleTypesRes] = await Promise.all([
+        // Fetch companies, customers, inspectors in parallel
+        const [companiesRes, customersRes, inspectorsRes] = await Promise.all([
           getCompanies(),
           getCustomers(),
-          getInspectors(),
-          getNeedleTypes()
+          getInspectors()
         ]);
         
         setCompanies(companiesRes);
         setCustomers(customersRes);
         setInspectors(inspectorsRes);
-        setNeedleTypes(needleTypesRes);
         
         // If we have companies, set a default
         if (companiesRes.length > 0) {
