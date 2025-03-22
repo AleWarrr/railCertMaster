@@ -6,8 +6,13 @@ const { v4: uuidv4 } = require('uuid');
 const app = express();
 const port = 5000;
 
-// Parse JSON bodies and enable CORS
-app.use(cors());
+// Configure CORS for the frontend
+app.use(cors({
+  origin: ['http://localhost:3000', 'http://172.31.128.86:3000'],
+  credentials: true
+}));
+
+// Parse JSON bodies
 app.use(express.json());
 
 // Configure PostgreSQL connection

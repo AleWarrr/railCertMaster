@@ -3,6 +3,7 @@
  * Manages all API calls to the backend server
  */
 
+// Use absolute URL to connect to the API server
 const API_BASE_URL = 'http://localhost:5000/api';
 
 /**
