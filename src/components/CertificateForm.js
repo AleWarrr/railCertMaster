@@ -375,6 +375,7 @@ const CertificateForm = () => {
                 watch={watch} 
                 setValue={setValue} 
                 getMaterialTemplate={getMaterialTemplate}
+                onNext={handleNext}
               />
             ) : (
               // Render default form for other material types

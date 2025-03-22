@@ -27,7 +27,7 @@ import { Controller } from 'react-hook-form';
  * NeedlesForm - Specialized component for handling needle material certifications
  * Manages needle-specific form fields, including needle weld types and customer information
  */
-const NeedlesForm = ({ control, errors, watch, setValue, getMaterialTemplate }) => {
+const NeedlesForm = ({ control, errors, watch, setValue, getMaterialTemplate, onNext }) => {
   const [customers, setCustomers] = useState([
     { id: '1', name: 'Railway Company A', address: '123 Railway St, City A' },
     { id: '2', name: 'Railway Company B', address: '456 Track Boulevard, City B' },
@@ -446,7 +446,7 @@ const NeedlesForm = ({ control, errors, watch, setValue, getMaterialTemplate }) 
         <Button
           variant="contained"
           endIcon={<NextIcon />}
-          onClick={() => {}} // Just a placeholder - navigation handled by parent
+          onClick={onNext}
         >
           Next
         </Button>
