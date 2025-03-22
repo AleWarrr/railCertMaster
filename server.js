@@ -132,7 +132,7 @@ app.get('/api/needle-inventory', async (req, res) => {
       FROM needle_inventory ni
       JOIN needle_types nt ON ni.needle_type_id = nt.id
       WHERE ni.status = 'available'
-      ORDER BY ni.needle_type_id, ni.serial_number
+      ORDER BY ni.num::integer
     `);
     res.json(result.rows);
   } catch (error) {
@@ -150,12 +150,31 @@ app.get('/api/needle-inventory/type/:typeId', async (req, res) => {
       FROM needle_inventory ni
       JOIN needle_types nt ON ni.needle_type_id = nt.id
       WHERE ni.needle_type_id = $1 AND ni.status = 'available'
-      ORDER BY ni.serial_number
+      ORDER BY ni.num::integer
     `, [typeId]);
     res.json(result.rows);
   } catch (error) {
     console.error('Error fetching needle inventory by type:', error);
     res.status(500).json({ error: 'Failed to fetch needle inventory' });
+  }
+});
+
+// Search needles by num
+app.get('/api/needle-inventory/search/:numQuery', async (req, res) => {
+  try {
+    const { numQuery } = req.params;
+    const result = await pool.query(`
+      SELECT ni.*, nt.name, nt.specification 
+      FROM needle_inventory ni
+      JOIN needle_types nt ON ni.needle_type_id = nt.id
+      WHERE ni.num LIKE $1 AND ni.status = 'available'
+      ORDER BY ni.num::integer
+      LIMIT 20
+    `, [`%${numQuery}%`]);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error searching needle inventory:', error);
+    res.status(500).json({ error: 'Failed to search needle inventory' });
   }
 });
 
@@ -299,21 +318,48 @@ app.post('/api/certificates', async (req, res) => {
     // Insert certificate needles and update inventory status
     if (needles && needles.length > 0) {
       for (const needle of needles) {
+        // Get needle information from inventory if only num is provided
+        let needleTypeId = needle.needle_type_id;
+        let serialNumber = needle.serial_number;
+        let needleNum = needle.num;
+        
+        // If we have just the num, look up the other details
+        if (needleNum && (!needleTypeId || !serialNumber)) {
+          const needleInfoResult = await client.query(
+            `SELECT * FROM needle_inventory WHERE num = $1 AND status = 'available'`,
+            [needleNum]
+          );
+          
+          if (needleInfoResult.rows.length > 0) {
+            needleTypeId = needleInfoResult.rows[0].needle_type_id;
+            serialNumber = needleInfoResult.rows[0].serial_number;
+          }
+        }
+        
         // Add to certificate_needles
         await client.query(
           `INSERT INTO certificate_needles 
-           (certificate_id, needle_type_id, serial_number, test_result)
-           VALUES ($1, $2, $3, $4)`,
-          [certificateId, needle.needle_type_id, needle.serial_number, needle.test_result || '']
+           (certificate_id, needle_type_id, serial_number, test_result, num)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [certificateId, needleTypeId, serialNumber, needle.test_result || '', needleNum]
         );
         
         // Update inventory status if the needle exists in inventory
-        await client.query(
-          `UPDATE needle_inventory 
-           SET status = 'certified' 
-           WHERE serial_number = $1`,
-          [needle.serial_number]
-        );
+        if (needleNum) {
+          await client.query(
+            `UPDATE needle_inventory 
+             SET status = 'certified' 
+             WHERE num = $1`,
+            [needleNum]
+          );
+        } else if (serialNumber) {
+          await client.query(
+            `UPDATE needle_inventory 
+             SET status = 'certified' 
+             WHERE serial_number = $1`,
+            [serialNumber]
+          );
+        }
       }
     }
     
@@ -384,20 +430,45 @@ app.put('/api/certificates/:id', async (req, res) => {
     
     // Get previous needles for this certificate
     const prevNeedlesResult = await client.query(
-      'SELECT serial_number FROM certificate_needles WHERE certificate_id = $1',
+      'SELECT num, serial_number FROM certificate_needles WHERE certificate_id = $1',
       [id]
     );
-    const prevNeedleSerials = prevNeedlesResult.rows.map(row => row.serial_number);
     
-    // Get new needle serials from request
-    const newNeedleSerials = needles ? needles.map(needle => needle.serial_number) : [];
+    // Create maps of previous needles by their identifiers
+    const prevNeedleNums = prevNeedlesResult.rows
+      .filter(row => row.num)
+      .map(row => row.num);
+      
+    const prevNeedleSerials = prevNeedlesResult.rows
+      .filter(row => row.serial_number && !row.num)
+      .map(row => row.serial_number);
+    
+    // Get new needle identifiers from request
+    const newNeedleNums = needles 
+      ? needles.filter(n => n.num).map(n => n.num)
+      : [];
+      
+    const newNeedleSerials = needles 
+      ? needles.filter(n => n.serial_number && !n.num).map(n => n.serial_number)
+      : [];
     
     // Find needles that were removed (in previous but not in new)
+    const removedNeedleNums = prevNeedleNums.filter(
+      num => !newNeedleNums.includes(num)
+    );
+    
     const removedNeedleSerials = prevNeedleSerials.filter(
       serial => !newNeedleSerials.includes(serial)
     );
     
     // Reset status of removed needles in inventory to 'available'
+    for (const num of removedNeedleNums) {
+      await client.query(
+        `UPDATE needle_inventory SET status = 'available' WHERE num = $1`,
+        [num]
+      );
+    }
+    
     for (const serial of removedNeedleSerials) {
       await client.query(
         `UPDATE needle_inventory SET status = 'available' WHERE serial_number = $1`,
@@ -410,21 +481,48 @@ app.put('/api/certificates/:id', async (req, res) => {
     
     if (needles && needles.length > 0) {
       for (const needle of needles) {
+        // Get needle information from inventory if only num is provided
+        let needleTypeId = needle.needle_type_id;
+        let serialNumber = needle.serial_number;
+        let needleNum = needle.num;
+        
+        // If we have just the num, look up the other details
+        if (needleNum && (!needleTypeId || !serialNumber)) {
+          const needleInfoResult = await client.query(
+            `SELECT * FROM needle_inventory WHERE num = $1`,
+            [needleNum]
+          );
+          
+          if (needleInfoResult.rows.length > 0) {
+            needleTypeId = needleInfoResult.rows[0].needle_type_id;
+            serialNumber = needleInfoResult.rows[0].serial_number;
+          }
+        }
+        
         // Add to certificate_needles
         await client.query(
           `INSERT INTO certificate_needles 
-           (certificate_id, needle_type_id, serial_number, test_result)
-           VALUES ($1, $2, $3, $4)`,
-          [id, needle.needle_type_id, needle.serial_number, needle.test_result || '']
+           (certificate_id, needle_type_id, serial_number, test_result, num)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [id, needleTypeId, serialNumber, needle.test_result || '', needleNum]
         );
         
-        // Update inventory status to 'certified'
-        await client.query(
-          `UPDATE needle_inventory 
-           SET status = 'certified' 
-           WHERE serial_number = $1`,
-          [needle.serial_number]
-        );
+        // Update inventory status
+        if (needleNum) {
+          await client.query(
+            `UPDATE needle_inventory 
+             SET status = 'certified' 
+             WHERE num = $1`,
+            [needleNum]
+          );
+        } else if (serialNumber) {
+          await client.query(
+            `UPDATE needle_inventory 
+             SET status = 'certified' 
+             WHERE serial_number = $1`,
+            [serialNumber]
+          );
+        }
       }
     }
     
@@ -485,10 +583,10 @@ app.delete('/api/attachments/:attachmentId', async (req, res) => {
 // Add needle to inventory
 app.post('/api/needle-inventory', async (req, res) => {
   try {
-    const { needle_type_id, serial_number } = req.body;
+    const { needle_type_id, serial_number, num } = req.body;
     
-    if (!needle_type_id || !serial_number) {
-      return res.status(400).json({ error: 'Needle type ID and serial number are required' });
+    if (!needle_type_id || !serial_number || !num) {
+      return res.status(400).json({ error: 'Needle type ID, serial number, and needle number (num) are required' });
     }
     
     // Check if needle type exists
@@ -503,12 +601,18 @@ app.post('/api/needle-inventory', async (req, res) => {
       return res.status(409).json({ error: 'Serial number already exists in inventory' });
     }
     
+    // Check if num already exists
+    const numResult = await pool.query('SELECT * FROM needle_inventory WHERE num = $1', [num]);
+    if (numResult.rows.length > 0) {
+      return res.status(409).json({ error: 'Needle number already exists in inventory' });
+    }
+    
     // Add needle to inventory
     const result = await pool.query(
-      `INSERT INTO needle_inventory (needle_type_id, serial_number, status)
-       VALUES ($1, $2, 'available')
+      `INSERT INTO needle_inventory (needle_type_id, serial_number, status, num)
+       VALUES ($1, $2, 'available', $3)
        RETURNING *`,
-      [needle_type_id, serial_number]
+      [needle_type_id, serial_number, num]
     );
     
     // Get the needle type details for response

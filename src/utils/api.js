@@ -153,3 +153,38 @@ export const addCertificateAttachment = async (certificateId, attachmentData) =>
 export const deleteCertificateAttachment = async (attachmentId) => {
   return fetchApi(`/attachments/${attachmentId}`, 'DELETE');
 };
+
+/**
+ * Get all available needles in inventory
+ * @returns {Promise<Array>} - List of needles
+ */
+export const getNeedleInventory = async () => {
+  return fetchApi('/needle-inventory');
+};
+
+/**
+ * Get available needles by type
+ * @param {number} typeId - Needle type ID
+ * @returns {Promise<Array>} - List of needles of the specific type
+ */
+export const getNeedleInventoryByType = async (typeId) => {
+  return fetchApi(`/needle-inventory/type/${typeId}`);
+};
+
+/**
+ * Search needles by number
+ * @param {string} numQuery - Needle number search query
+ * @returns {Promise<Array>} - List of matching needles
+ */
+export const searchNeedlesByNum = async (numQuery) => {
+  return fetchApi(`/needle-inventory/search/${numQuery}`);
+};
+
+/**
+ * Add a new needle to inventory
+ * @param {Object} needleData - Needle data (needle_type_id, serial_number, num)
+ * @returns {Promise<Object>} - Response with new needle data
+ */
+export const addNeedleToInventory = async (needleData) => {
+  return fetchApi('/needle-inventory', 'POST', needleData);
+};

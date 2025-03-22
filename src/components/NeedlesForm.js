@@ -23,7 +23,7 @@ import {
   Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { Controller } from 'react-hook-form';
-import { getCompanies, getCustomers, getInspectors } from '../utils/api';
+import { getCompanies, getCustomers, getInspectors, getNeedleTypes, getNeedleInventory, searchNeedlesByNum } from '../utils/api';
 
 /**
  * NeedlesForm - Specialized component for handling needle material certifications
@@ -39,15 +39,10 @@ const NeedlesForm = ({ control, errors, watch, setValue, getMaterialTemplate, on
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedNeedleTypes, setSelectedNeedleTypes] = useState([]);
-  
-  // Built-in needle types - eliminates the need for API fetch
-  const needleTypes = [
-    { id: 1, name: 'Type A - Standard Weld', specification: 'RS-2023-A' },
-    { id: 2, name: 'Type B - Heavy Duty Weld', specification: 'RS-2023-B' },
-    { id: 3, name: 'Type C - Precision Weld', specification: 'RS-2023-C' },
-    { id: 4, name: 'Type D - High Tensile Weld', specification: 'RS-2023-D' },
-    { id: 5, name: 'Type E - Special Purpose Weld', specification: 'RS-2023-E' }
-  ];
+  const [needleTypes, setNeedleTypes] = useState([]);
+  const [needleInventory, setNeedleInventory] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
   
   // Load data from the database
   useEffect(() => {
@@ -55,16 +50,20 @@ const NeedlesForm = ({ control, errors, watch, setValue, getMaterialTemplate, on
       setIsLoading(true);
       setError(null);
       try {
-        // Fetch companies, customers, inspectors in parallel
-        const [companiesRes, customersRes, inspectorsRes] = await Promise.all([
+        // Fetch companies, customers, inspectors, needle types, and inventory in parallel
+        const [companiesRes, customersRes, inspectorsRes, needleTypesRes, needleInventoryRes] = await Promise.all([
           getCompanies(),
           getCustomers(),
-          getInspectors()
+          getInspectors(),
+          getNeedleTypes(),
+          getNeedleInventory()
         ]);
         
         setCompanies(companiesRes);
         setCustomers(customersRes);
         setInspectors(inspectorsRes);
+        setNeedleTypes(needleTypesRes);
+        setNeedleInventory(needleInventoryRes);
         
         // If we have companies, set a default
         if (companiesRes.length > 0) {
@@ -149,6 +148,34 @@ const NeedlesForm = ({ control, errors, watch, setValue, getMaterialTemplate, on
       const newNeedles = currentNeedles.filter((_, i) => i !== index);
       setValue('needles', newNeedles);
       setSelectedNeedleTypes(newNeedles);
+    }
+  };
+  
+  // Handle searching for needles by number
+  const handleNeedleSearch = async (index, query) => {
+    if (!query || query.length < 3) {
+      setSearchResults([]);
+      return;
+    }
+    
+    try {
+      const results = await searchNeedlesByNum(query);
+      console.log('Search results:', results);
+      setSearchResults(results);
+      
+      // If there's an exact match, auto-select it
+      if (results.length === 1 && results[0].num === query) {
+        const needle = results[0];
+        const currentNeedles = [...(watch('needles') || [])];
+        currentNeedles[index] = { 
+          ...currentNeedles[index], 
+          needle_id: needle.id,
+          serial_number: needle.num
+        };
+        setValue('needles', currentNeedles);
+      }
+    } catch (error) {
+      console.error('Error searching for needles:', error);
     }
   };
   
