@@ -146,12 +146,28 @@ const NeedlesForm = ({ control, errors, watch, setValue, getMaterialTemplate, on
     }
   };
   
-  // Handler for updating a needle type
+  // Handler for updating a needle type and generate certificate number
   const handleNeedleTypeChange = (index, value) => {
     const currentNeedles = [...(watch('needles') || [])];
     currentNeedles[index] = { ...currentNeedles[index], needle_type_id: value };
     setValue('needles', currentNeedles);
     setSelectedNeedleTypes(currentNeedles);
+    
+    // Generate certificate number when a needle type is selected
+    if (value) {
+      const needleType = needleTypes.find(type => type.id === parseInt(value));
+      if (needleType) {
+        // Format: NT-{needle_type_id}-{YYYYMMDD}-{random 4 digits}
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const random = Math.floor(1000 + Math.random() * 9000); // 4-digit random number
+        
+        const certificateNumber = `NT-${value}-${year}${month}${day}-${random}`;
+        setValue('certificateNumber', certificateNumber);
+      }
+    }
   };
   
   // Show a loading state while fetching data

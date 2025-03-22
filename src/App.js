@@ -8,20 +8,25 @@ import MaterialCertificates from './components/MaterialCertificates';
 import CertificateForm from './components/CertificateForm';
 import PdfPreview from './components/PdfPreview';
 import SettingsPage from './components/SettingsPage';
-import { getCompanyProfile } from './utils/dataStore';
+import apiAdapter from './utils/apiAdapter';
 
 const App = () => {
   const [loading, setLoading] = useState(true);
   const [initialized, setInitialized] = useState(false);
   const [companyProfile, setCompanyProfile] = useState(null);
 
-  // Initialize application
+  // Initialize application and attach API adapter to window object
   useEffect(() => {
     const initApp = async () => {
       try {
-        // Load company profile from store
-        const profile = await getCompanyProfile();
-        setCompanyProfile(profile);
+        // Attach API adapter to window object for global access
+        window.api = apiAdapter;
+        
+        // Load company profile from API
+        const profileResult = await apiAdapter.getCompanyProfile();
+        if (profileResult.success && profileResult.data) {
+          setCompanyProfile(profileResult.data);
+        }
         setInitialized(true);
       } catch (error) {
         console.error('Error initializing app:', error);
