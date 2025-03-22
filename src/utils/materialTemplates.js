@@ -6,6 +6,7 @@
 
 // Material types available in the system
 export const MATERIAL_TYPES = [
+  { value: 'needles', label: 'Needles' },
   { value: 'rail', label: 'Rail Steel' },
   { value: 'sleeper', label: 'Concrete Sleeper' },
   { value: 'fastening', label: 'Fastening System' },
@@ -15,6 +16,50 @@ export const MATERIAL_TYPES = [
   { value: 'joint', label: 'Rail Joint' },
   { value: 'tie', label: 'Wooden Tie' },
 ];
+
+// Template for Needles
+const needlesTemplate = {
+  testResults: [
+    { name: 'Dimensional Check', standardValue: 'As per drawing', unit: 'mm' },
+    { name: 'Ultrasonic Testing', standardValue: 'No internal defects', unit: '' },
+    { name: 'Magnetic Particle Testing', standardValue: 'No surface defects', unit: '' },
+    { name: 'Visual Inspection', standardValue: 'No visible cracks', unit: '' },
+  ],
+  chemicalComposition: [
+    { name: 'Carbon (C)', minValue: '0.58', maxValue: '0.67', unit: '%' },
+    { name: 'Manganese (Mn)', minValue: '0.70', maxValue: '1.10', unit: '%' },
+    { name: 'Silicon (Si)', minValue: '0.15', maxValue: '0.35', unit: '%' },
+    { name: 'Phosphorus (P)', minValue: '0', maxValue: '0.030', unit: '%' },
+    { name: 'Sulfur (S)', minValue: '0', maxValue: '0.030', unit: '%' },
+    { name: 'Chromium (Cr)', minValue: '0.80', maxValue: '1.10', unit: '%' },
+  ],
+  mechanicalProperties: [
+    { name: 'Tensile Strength', requiredValue: '≥ 900', unit: 'MPa' },
+    { name: 'Yield Strength', requiredValue: '≥ 600', unit: 'MPa' },
+    { name: 'Elongation', requiredValue: '≥ 10', unit: '%' },
+    { name: 'Hardness', requiredValue: '270-320', unit: 'BHN' },
+    { name: 'Impact Strength', requiredValue: '≥ 20', unit: 'J' },
+  ],
+  // Specific properties for needle type certification
+  needleWelds: [
+    { id: '1', name: 'Type A - Standard Weld', specification: 'RS-2023-A' },
+    { id: '2', name: 'Type B - Heavy Duty Weld', specification: 'RS-2023-B' },
+    { id: '3', name: 'Type C - Precision Weld', specification: 'RS-2023-C' },
+    { id: '4', name: 'Type D - High Tensile Weld', specification: 'RS-2023-D' },
+    { id: '5', name: 'Type E - Special Purpose Weld', specification: 'RS-2023-E' },
+  ],
+  inspectors: [
+    { id: 'INS001', name: 'John Smith', qualification: 'Lead Inspector' },
+    { id: 'INS002', name: 'Sarah Johnson', qualification: 'Senior Inspector' },
+    { id: 'INS003', name: 'Michael Brown', qualification: 'Quality Control Specialist' },
+  ],
+  customers: [
+    { id: 'CUST001', name: 'Northern Railways Inc.', address: '123 Northern Blvd, North City, NC 12345' },
+    { id: 'CUST002', name: 'Southern Transit Authority', address: '456 Southern Ave, South City, SC 67890' },
+    { id: 'CUST003', name: 'Eastern Rail Systems', address: '789 Eastern Dr, East Town, ET 23456' },
+    { id: 'CUST004', name: 'Western Railway Corp', address: '101 Western St, West City, WC 78901' },
+  ]
+};
 
 // Template for Rail Steel
 const railTemplate = {
@@ -155,6 +200,37 @@ const jointTemplate = {
   ],
 };
 
+// This section is for reference only and will be removed
+// when we merge these values into the main needlesTemplate
+/*
+const extraNeedleData = {
+  needleWelds: [
+    { id: 'NW001', name: 'Needle Weld #1' },
+    { id: 'NW002', name: 'Needle Weld #2' },
+    { id: 'NW003', name: 'Needle Weld #3' },
+    { id: 'NW004', name: 'Needle Weld #4' },
+    { id: 'NW005', name: 'Needle Weld #5' },
+    { id: 'NW006', name: 'Needle Weld #6' },
+    { id: 'NW007', name: 'Needle Weld #7' },
+    { id: 'NW008', name: 'Needle Weld #8' },
+    { id: 'NW009', name: 'Needle Weld #9' },
+    { id: 'NW010', name: 'Needle Weld #10' },
+  ],
+  inspectors: [
+    { code: 'INS001', name: 'John Smith' },
+    { code: 'INS002', name: 'Maria Garcia' },
+    { code: 'INS003', name: 'David Johnson' },
+    { code: 'INS004', name: 'Sarah Williams' },
+  ],
+  customers: [
+    { id: 'CUST001', name: 'Northern Railways Inc.', address: '123 Northern Blvd, North City, NC 12345' },
+    { id: 'CUST002', name: 'Southern Transit Authority', address: '456 Southern Ave, South City, SC 67890' },
+    { id: 'CUST003', name: 'Eastern Rail Systems', address: '789 Eastern Dr, East Town, ET 23456' },
+    { id: 'CUST004', name: 'Western Railway Corp', address: '101 Western St, West City, WC 78901' },
+  ]
+};
+*/
+
 // Template for Wooden Tie
 const tieTemplate = {
   testResults: [
@@ -174,6 +250,7 @@ const tieTemplate = {
 
 // Map material types to their templates
 const MATERIAL_TEMPLATES = {
+  needles: needlesTemplate,
   rail: railTemplate,
   sleeper: sleeperTemplate,
   fastening: fasteningTemplate,

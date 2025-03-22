@@ -4,6 +4,7 @@ modules = ["nodejs-20"]
 channel = "stable-24_05"
 
 [workflows]
+runButton = "Project"
 
 [[workflows.workflow]]
 name = "Project"
@@ -46,6 +47,7 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npm install && npm start"
+waitForPort = 3000
 
 [[workflows.workflow]]
 name = "Electron App"
@@ -83,3 +85,7 @@ run = ["sh", "-c", "npm install && npm start"]
 [[ports]]
 localPort = 3000
 externalPort = 80
+
+[[ports]]
+localPort = 3001
+externalPort = 3001

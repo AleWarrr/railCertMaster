@@ -45,6 +45,7 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 import { MATERIAL_TYPES, getMaterialTemplate } from '../utils/materialTemplates';
 import AttachmentManager from './AttachmentManager';
+import NeedlesForm from './NeedlesForm';
 
 // Tab panel component
 function TabPanel({ children, value, index, ...other }) {
@@ -365,183 +366,197 @@ const CertificateForm = () => {
       <form>
         {/* Step 1: Basic Information */}
         {activeStep === 0 && (
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Basic Information
-              </Typography>
-              <Divider sx={{ mb: 3 }} />
-              
-              <Grid container spacing={3}>
-                <Grid item xs={12} sm={6}>
-                  <Controller
-                    name="certificateNumber"
-                    control={control}
-                    rules={{ required: 'Certificate number is required' }}
-                    render={({ field }) => (
-                      <TextField
-                        {...field}
-                        label="Certificate Number"
-                        fullWidth
-                        variant="outlined"
-                        error={!!errors.certificateNumber}
-                        helperText={errors.certificateNumber?.message}
-                      />
-                    )}
-                  />
-                </Grid>
-                
-                <Grid item xs={12} sm={6}>
-                  <Controller
-                    name="date"
-                    control={control}
-                    rules={{ required: 'Date is required' }}
-                    render={({ field }) => (
-                      <TextField
-                        {...field}
-                        label="Certificate Date"
-                        type="date"
-                        fullWidth
-                        variant="outlined"
-                        InputLabelProps={{ shrink: true }}
-                        error={!!errors.date}
-                        helperText={errors.date?.message}
-                      />
-                    )}
-                  />
-                </Grid>
-                
-                <Grid item xs={12} sm={6}>
-                  <Controller
-                    name="materialType"
-                    control={control}
-                    rules={{ required: 'Material type is required' }}
-                    render={({ field }) => (
-                      <FormControl fullWidth error={!!errors.materialType}>
-                        <InputLabel id="material-type-label">Material Type</InputLabel>
-                        <Select
-                          {...field}
-                          labelId="material-type-label"
-                          label="Material Type"
-                        >
-                          {MATERIAL_TYPES.map((type) => (
-                            <MenuItem key={type.value} value={type.value}>
-                              {type.label}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                        {errors.materialType && (
-                          <FormHelperText>{errors.materialType.message}</FormHelperText>
-                        )}
-                      </FormControl>
-                    )}
-                  />
-                </Grid>
-                
-                <Grid item xs={12} sm={6}>
-                  <Controller
-                    name="batchNumber"
-                    control={control}
-                    rules={{ required: 'Batch number is required' }}
-                    render={({ field }) => (
-                      <TextField
-                        {...field}
-                        label="Batch Number"
-                        fullWidth
-                        variant="outlined"
-                        error={!!errors.batchNumber}
-                        helperText={errors.batchNumber?.message}
-                      />
-                    )}
-                  />
-                </Grid>
-                
-                <Grid item xs={12} sm={6}>
-                  <Controller
-                    name="quantity"
-                    control={control}
-                    render={({ field }) => (
-                      <TextField
-                        {...field}
-                        label="Quantity"
-                        fullWidth
-                        variant="outlined"
-                      />
-                    )}
-                  />
-                </Grid>
-                
-                <Grid item xs={12} sm={6}>
-                  <Controller
-                    name="status"
-                    control={control}
-                    render={({ field }) => (
-                      <FormControl fullWidth>
-                        <InputLabel id="status-label">Status</InputLabel>
-                        <Select
-                          {...field}
-                          labelId="status-label"
-                          label="Status"
-                        >
-                          <MenuItem value="draft">Draft</MenuItem>
-                          <MenuItem value="final">Final</MenuItem>
-                        </Select>
-                      </FormControl>
-                    )}
-                  />
-                </Grid>
-                
-                <Grid item xs={12}>
-                  <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-                    Customer Information
+          <>
+            {watchMaterialType === 'needles' ? (
+              // Render Needles-specific form
+              <NeedlesForm 
+                control={control} 
+                errors={errors} 
+                watch={watch} 
+                setValue={setValue} 
+                getMaterialTemplate={getMaterialTemplate}
+              />
+            ) : (
+              // Render default form for other material types
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Basic Information
                   </Typography>
                   <Divider sx={{ mb: 3 }} />
-                </Grid>
-                
-                <Grid item xs={12} sm={6}>
-                  <Controller
-                    name="customerName"
-                    control={control}
-                    rules={{ required: 'Customer name is required' }}
-                    render={({ field }) => (
-                      <TextField
-                        {...field}
-                        label="Customer Name"
-                        fullWidth
-                        variant="outlined"
-                        error={!!errors.customerName}
-                        helperText={errors.customerName?.message}
+                  
+                  <Grid container spacing={3}>
+                    <Grid item xs={12} sm={6}>
+                      <Controller
+                        name="certificateNumber"
+                        control={control}
+                        rules={{ required: 'Certificate number is required' }}
+                        render={({ field }) => (
+                          <TextField
+                            {...field}
+                            label="Certificate Number"
+                            fullWidth
+                            variant="outlined"
+                            error={!!errors.certificateNumber}
+                            helperText={errors.certificateNumber?.message}
+                          />
+                        )}
                       />
-                    )}
-                  />
-                </Grid>
-                
-                <Grid item xs={12} sm={6}>
-                  <Controller
-                    name="customerReference"
-                    control={control}
-                    render={({ field }) => (
-                      <TextField
-                        {...field}
-                        label="Customer Reference Number"
-                        fullWidth
-                        variant="outlined"
+                    </Grid>
+                    
+                    <Grid item xs={12} sm={6}>
+                      <Controller
+                        name="date"
+                        control={control}
+                        rules={{ required: 'Date is required' }}
+                        render={({ field }) => (
+                          <TextField
+                            {...field}
+                            label="Certificate Date"
+                            type="date"
+                            fullWidth
+                            variant="outlined"
+                            InputLabelProps={{ shrink: true }}
+                            error={!!errors.date}
+                            helperText={errors.date?.message}
+                          />
+                        )}
                       />
-                    )}
-                  />
-                </Grid>
-              </Grid>
-            </CardContent>
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 2 }}>
-              <Button
-                variant="contained"
-                endIcon={<NextIcon />}
-                onClick={handleNext}
-              >
-                Next
-              </Button>
-            </Box>
-          </Card>
+                    </Grid>
+                    
+                    <Grid item xs={12} sm={6}>
+                      <Controller
+                        name="materialType"
+                        control={control}
+                        rules={{ required: 'Material type is required' }}
+                        render={({ field }) => (
+                          <FormControl fullWidth error={!!errors.materialType}>
+                            <InputLabel id="material-type-label">Material Type</InputLabel>
+                            <Select
+                              {...field}
+                              labelId="material-type-label"
+                              label="Material Type"
+                            >
+                              {MATERIAL_TYPES.map((type) => (
+                                <MenuItem key={type.value} value={type.value}>
+                                  {type.label}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                            {errors.materialType && (
+                              <FormHelperText>{errors.materialType.message}</FormHelperText>
+                            )}
+                          </FormControl>
+                        )}
+                      />
+                    </Grid>
+
+                    <Grid item xs={12} sm={6}>
+                      <Controller
+                        name="batchNumber"
+                        control={control}
+                        rules={{ required: 'Batch number is required' }}
+                        render={({ field }) => (
+                          <TextField
+                            {...field}
+                            label="Batch Number"
+                            fullWidth
+                            variant="outlined"
+                            error={!!errors.batchNumber}
+                            helperText={errors.batchNumber?.message}
+                          />
+                        )}
+                      />
+                    </Grid>
+                    
+                    <Grid item xs={12} sm={6}>
+                      <Controller
+                        name="quantity"
+                        control={control}
+                        render={({ field }) => (
+                          <TextField
+                            {...field}
+                            label="Quantity"
+                            fullWidth
+                            variant="outlined"
+                          />
+                        )}
+                      />
+                    </Grid>
+                    
+                    <Grid item xs={12} sm={6}>
+                      <Controller
+                        name="status"
+                        control={control}
+                        render={({ field }) => (
+                          <FormControl fullWidth>
+                            <InputLabel id="status-label">Status</InputLabel>
+                            <Select
+                              {...field}
+                              labelId="status-label"
+                              label="Status"
+                            >
+                              <MenuItem value="draft">Draft</MenuItem>
+                              <MenuItem value="final">Final</MenuItem>
+                            </Select>
+                          </FormControl>
+                        )}
+                      />
+                    </Grid>
+                    
+                    <Grid item xs={12}>
+                      <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
+                        Customer Information
+                      </Typography>
+                      <Divider sx={{ mb: 3 }} />
+                    </Grid>
+                    
+                    <Grid item xs={12} sm={6}>
+                      <Controller
+                        name="customerName"
+                        control={control}
+                        rules={{ required: 'Customer name is required' }}
+                        render={({ field }) => (
+                          <TextField
+                            {...field}
+                            label="Customer Name"
+                            fullWidth
+                            variant="outlined"
+                            error={!!errors.customerName}
+                            helperText={errors.customerName?.message}
+                          />
+                        )}
+                      />
+                    </Grid>
+                    
+                    <Grid item xs={12} sm={6}>
+                      <Controller
+                        name="customerReference"
+                        control={control}
+                        render={({ field }) => (
+                          <TextField
+                            {...field}
+                            label="Customer Reference Number"
+                            fullWidth
+                            variant="outlined"
+                          />
+                        )}
+                      />
+                    </Grid>
+                  </Grid>
+                </CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 2 }}>
+                  <Button
+                    variant="contained"
+                    endIcon={<NextIcon />}
+                    onClick={handleNext}
+                  >
+                    Next
+                  </Button>
+                </Box>
+              </Card>
+            )}
+          </>
         )}
         
         {/* Step 2: Test Results */}
