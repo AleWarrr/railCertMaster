@@ -529,9 +529,15 @@ const NeedlesForm = ({ control, errors, watch, setValue, getMaterialTemplate, on
                             render={({ field }) => (
                               <TextField
                                 {...field}
-                                label="Serial Number"
+                                label="Needle ID"
                                 fullWidth
                                 variant="outlined"
+                                onChange={(e) => {
+                                  field.onChange(e);
+                                  handleNeedleSearch(index, e.target.value);
+                                }}
+                                placeholder="Enter needle ID (e.g., 4444, 53292)"
+                                helperText="Enter a 4-5 digit needle ID"
                               />
                             )}
                           />
