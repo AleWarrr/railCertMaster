@@ -47,10 +47,14 @@ const Dashboard = ({ materialType }) => {
         }
         setCurrentUser(userData);
         
-        // Get company profile
-        const profileResult = await window.api.getCompanyProfile();
-        if (profileResult.success) {
-          setCompanyProfile(profileResult.data);
+        // Get company profile from the user data if available, otherwise from the API
+        if (userData.company) {
+          setCompanyProfile(userData.company);
+        } else {
+          const profileResult = await window.api.getCompanyProfile();
+          if (profileResult.success) {
+            setCompanyProfile(profileResult.data);
+          }
         }
         
         // Get certificates
@@ -107,7 +111,7 @@ const Dashboard = ({ materialType }) => {
         {currentUser && (
           <Box display="flex" alignItems="center" gap={1}>
             <Typography variant="subtitle1">
-              Bienvenido, {currentUser.name || currentUser.username}
+              Bienvenido, {currentUser.nombre || currentUser.name || currentUser.username || 'Usuario'}
             </Typography>
             <Button 
               variant="outlined" 
@@ -138,12 +142,26 @@ const Dashboard = ({ materialType }) => {
                   <Typography variant="body1" gutterBottom>
                     <strong>Nombre de Empresa:</strong> {companyProfile.companyName || 'No configurado'}
                   </Typography>
-                  <Typography variant="body1" gutterBottom>
-                    <strong>Contacto:</strong> {companyProfile.contactName || 'No configurado'}
-                  </Typography>
-                  <Typography variant="body1" gutterBottom>
-                    <strong>Email:</strong> {companyProfile.email || 'No configurado'}
-                  </Typography>
+                  {companyProfile.location && (
+                    <Typography variant="body1" gutterBottom>
+                      <strong>Ubicación:</strong> {companyProfile.location}
+                    </Typography>
+                  )}
+                  {companyProfile.nif && (
+                    <Typography variant="body1" gutterBottom>
+                      <strong>NIF:</strong> {companyProfile.nif}
+                    </Typography>
+                  )}
+                  {companyProfile.responsableCalidad && (
+                    <Typography variant="body1" gutterBottom>
+                      <strong>Responsable de Calidad:</strong> {companyProfile.responsableCalidad}
+                    </Typography>
+                  )}
+                  {companyProfile.emailResponsableCalidad && (
+                    <Typography variant="body1" gutterBottom>
+                      <strong>Email Responsable de Calidad:</strong> {companyProfile.emailResponsableCalidad}
+                    </Typography>
+                  )}
                   <Typography variant="caption" display="block" color="text.secondary" mt={2}>
                     Estos datos se utilizarán en todos los certificados generados.
                   </Typography>
@@ -181,14 +199,24 @@ const Dashboard = ({ materialType }) => {
               {currentUser ? (
                 <>
                   <Typography variant="body1" gutterBottom>
-                    <strong>Nombre:</strong> {currentUser.name || 'No configurado'}
+                    <strong>Nombre:</strong> {currentUser.nombre || currentUser.name || 'No configurado'}
                   </Typography>
                   <Typography variant="body1" gutterBottom>
                     <strong>Email:</strong> {currentUser.email || 'No configurado'}
                   </Typography>
                   <Typography variant="body1" gutterBottom>
-                    <strong>Rol:</strong> {currentUser.role === 'admin' ? 'Administrador' : 'Usuario'}
+                    <strong>Rol:</strong> {currentUser.rol_nombre ? 
+                      (currentUser.rol_nombre === 'admin' ? 'Administrador' : 
+                       currentUser.rol_nombre === 'fabricante' ? 'Fabricante' : 
+                       currentUser.rol_nombre === 'consultor' ? 'Consultor' : 
+                       currentUser.rol_nombre) : 
+                      (currentUser.role === 'admin' ? 'Administrador' : 'Usuario')}
                   </Typography>
+                  {currentUser.fabricante_nombre && (
+                    <Typography variant="body1" gutterBottom>
+                      <strong>Empresa:</strong> {currentUser.fabricante_nombre}
+                    </Typography>
+                  )}
                 </>
               ) : (
                 <Alert severity="warning" sx={{ mt: 2 }}>

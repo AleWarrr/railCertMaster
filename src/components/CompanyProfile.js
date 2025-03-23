@@ -27,17 +27,14 @@ const CompanyProfile = () => {
   const { control, handleSubmit, setValue, formState: { errors } } = useForm({
     defaultValues: {
       companyName: '',
-      contactName: '',
-      email: '',
-      phone: '',
       address: '',
       city: '',
       state: '',
       zipCode: '',
       country: '',
-      website: '',
-      registrationNumber: '',
-      taxId: '',
+      nif: '',
+      responsable_calidad: '',
+      email_responsable_calidad: '',
       logoBase64: ''
     }
   });
@@ -51,16 +48,25 @@ const CompanyProfile = () => {
         
         // Determinar si el formulario debe ser de solo lectura
         // Solo los administradores pueden editar el perfil de la empresa
-        if (userData && userData.role !== 'admin') {
+        if (userData && userData.role !== 'admin' && userData.rol_nombre !== 'admin') {
           setIsReadOnly(true);
         }
         
         // Cargar el perfil de la empresa
         const result = await window.api.getCompanyProfile();
         if (result.success && result.data) {
-          // Set form values from stored profile
-          Object.keys(result.data).forEach(key => {
-            setValue(key, result.data[key] || '');
+          // Mapeo de campos de la API a campos del formulario
+          const mappings = {
+            'companyName': result.data.companyName || '',
+            'address': result.data.location || result.data.address || '',
+            'nif': result.data.nif || '',
+            'responsable_calidad': result.data.responsableCalidad || '',
+            'email_responsable_calidad': result.data.emailResponsableCalidad || ''
+          };
+
+          // Establecer los valores mapeados en el formulario
+          Object.keys(mappings).forEach(key => {
+            setValue(key, mappings[key]);
           });
           
           // Set logo preview if available
@@ -182,17 +188,17 @@ const CompanyProfile = () => {
                   
                   <Grid item xs={12} sm={6}>
                     <Controller
-                      name="contactName"
+                      name="responsable_calidad"
                       control={control}
-                      rules={{ required: 'El nombre de contacto es obligatorio' }}
+                      rules={{ required: 'El responsable de calidad es obligatorio' }}
                       render={({ field }) => (
                         <TextField
                           {...field}
                           fullWidth
-                          label="Nombre de Contacto"
+                          label="Responsable de Calidad"
                           variant="outlined"
-                          error={!!errors.contactName}
-                          helperText={errors.contactName?.message}
+                          error={!!errors.responsable_calidad}
+                          helperText={errors.responsable_calidad?.message}
                           disabled={isReadOnly}
                         />
                       )}
@@ -201,10 +207,10 @@ const CompanyProfile = () => {
                   
                   <Grid item xs={12} sm={6}>
                     <Controller
-                      name="email"
+                      name="email_responsable_calidad"
                       control={control}
                       rules={{ 
-                        required: 'El email es obligatorio',
+                        required: 'El email del responsable de calidad es obligatorio',
                         pattern: {
                           value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
                           message: 'Email inválido'
@@ -214,42 +220,10 @@ const CompanyProfile = () => {
                         <TextField
                           {...field}
                           fullWidth
-                          label="Email"
+                          label="Email del Responsable de Calidad"
                           variant="outlined"
-                          error={!!errors.email}
-                          helperText={errors.email?.message}
-                          disabled={isReadOnly}
-                        />
-                      )}
-                    />
-                  </Grid>
-                  
-                  <Grid item xs={12} sm={6}>
-                    <Controller
-                      name="phone"
-                      control={control}
-                      render={({ field }) => (
-                        <TextField
-                          {...field}
-                          fullWidth
-                          label="Teléfono"
-                          variant="outlined"
-                          disabled={isReadOnly}
-                        />
-                      )}
-                    />
-                  </Grid>
-                  
-                  <Grid item xs={12} sm={6}>
-                    <Controller
-                      name="website"
-                      control={control}
-                      render={({ field }) => (
-                        <TextField
-                          {...field}
-                          fullWidth
-                          label="Sitio Web"
-                          variant="outlined"
+                          error={!!errors.email_responsable_calidad}
+                          helperText={errors.email_responsable_calidad?.message}
                           disabled={isReadOnly}
                         />
                       )}
@@ -264,71 +238,7 @@ const CompanyProfile = () => {
                         <TextField
                           {...field}
                           fullWidth
-                          label="Dirección"
-                          variant="outlined"
-                          disabled={isReadOnly}
-                        />
-                      )}
-                    />
-                  </Grid>
-                  
-                  <Grid item xs={12} sm={6}>
-                    <Controller
-                      name="city"
-                      control={control}
-                      render={({ field }) => (
-                        <TextField
-                          {...field}
-                          fullWidth
-                          label="Ciudad"
-                          variant="outlined"
-                          disabled={isReadOnly}
-                        />
-                      )}
-                    />
-                  </Grid>
-                  
-                  <Grid item xs={12} sm={6}>
-                    <Controller
-                      name="state"
-                      control={control}
-                      render={({ field }) => (
-                        <TextField
-                          {...field}
-                          fullWidth
-                          label="Provincia"
-                          variant="outlined"
-                          disabled={isReadOnly}
-                        />
-                      )}
-                    />
-                  </Grid>
-                  
-                  <Grid item xs={12} sm={6}>
-                    <Controller
-                      name="zipCode"
-                      control={control}
-                      render={({ field }) => (
-                        <TextField
-                          {...field}
-                          fullWidth
-                          label="Código Postal"
-                          variant="outlined"
-                          disabled={isReadOnly}
-                        />
-                      )}
-                    />
-                  </Grid>
-                  
-                  <Grid item xs={12} sm={6}>
-                    <Controller
-                      name="country"
-                      control={control}
-                      render={({ field }) => (
-                        <TextField
-                          {...field}
-                          fullWidth
-                          label="País"
+                          label="Ubicación"
                           variant="outlined"
                           disabled={isReadOnly}
                         />
@@ -343,32 +253,19 @@ const CompanyProfile = () => {
                 <Divider sx={{ mb: 3 }} />
                 
                 <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
+                  <Grid item xs={12}>
                     <Controller
-                      name="registrationNumber"
+                      name="nif"
                       control={control}
-                      render={({ field }) => (
-                        <TextField
-                          {...field}
-                          fullWidth
-                          label="Número de Registro"
-                          variant="outlined"
-                          disabled={isReadOnly}
-                        />
-                      )}
-                    />
-                  </Grid>
-                  
-                  <Grid item xs={12} sm={6}>
-                    <Controller
-                      name="taxId"
-                      control={control}
+                      rules={{ required: 'El NIF/CIF es obligatorio' }}
                       render={({ field }) => (
                         <TextField
                           {...field}
                           fullWidth
                           label="NIF/CIF"
                           variant="outlined"
+                          error={!!errors.nif}
+                          helperText={errors.nif?.message}
                           disabled={isReadOnly}
                         />
                       )}

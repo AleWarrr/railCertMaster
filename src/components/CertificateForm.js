@@ -54,7 +54,9 @@ import {
   getNeedleTypes,
   getCustomers,
   getInspectors,
-  getNeedleInventory
+  getNeedleInventory,
+  getCustomersByCompanyId,
+  getCurrentUser
 } from '../utils/api';
 
 // Tab panel component
@@ -151,7 +153,6 @@ const CertificateForm = ({ initialMaterialType }) => {
     const year = currentDate.getFullYear();
     const month = String(currentDate.getMonth() + 1).padStart(2, '0');
     const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-    console.log("Generando número de certificado para agujas:", `AG-${year}${month}-${random}`);
     return `AG-${year}${month}-${random}`;
   };
   
@@ -172,7 +173,6 @@ const CertificateForm = ({ initialMaterialType }) => {
       // Generar número de certificado automáticamente para agujas si viene preseleccionado
       if (initialMaterialType === 'aguja') {
         const certNumber = generateNeedleCertificateNumber();
-        console.log("Estableciendo número de certificado inicial:", certNumber);
         setValue('certificateNumber', certNumber);
         
         // Inicializar el array de agujas seleccionadas
@@ -199,19 +199,31 @@ const CertificateForm = ({ initialMaterialType }) => {
         const needleInventoryData = await getNeedleInventory();
         setNeedleInventory(Array.isArray(needleInventoryData) ? needleInventoryData : []);
         
-        // Obtener clientes - solo para seleccionar, no para modificar
-        const customersData = await getCustomers();
-        setCustomers(Array.isArray(customersData) ? customersData : []);
+        // Obtener información del usuario actual
+        const currentUser = getCurrentUser();
         
-        // Obtener inspectores - solo para seleccionar, no para modificar
+        // Obtener inspectores
         const inspectorsData = await getInspectors();
         setInspectors(Array.isArray(inspectorsData) ? inspectorsData : []);
 
-        // Datos de la empresa
+        // Obtener empresas
         const companiesData = await getCompanies();
         if (Array.isArray(companiesData) && companiesData.length > 0) {
           setCompanyProfile(companiesData[0]);
         }
+        
+        // Cargar clientes según el fabricante del usuario
+        let customersData;
+        if (currentUser && currentUser.fabricante_id) {
+          // Si el usuario tiene un fabricante asociado, obtener sus clientes
+          customersData = await getCustomersByCompanyId(currentUser.fabricante_id);
+          console.log('Clientes del fabricante cargados:', customersData);
+        } else {
+          // Si no, cargar todos los clientes (solo para administradores)
+          customersData = await getCustomers();
+          console.log('Todos los clientes cargados:', customersData);
+        }
+        setCustomers(Array.isArray(customersData) ? customersData : []);
 
         // Si hay un ID de certificado, cargar datos
         if (id) {
@@ -281,7 +293,6 @@ const CertificateForm = ({ initialMaterialType }) => {
       // Generar número de certificado automáticamente para agujas
       if (watchMaterialType === 'aguja' && !isEditMode) {
         const certNumber = generateNeedleCertificateNumber();
-        console.log("Estableciendo número de certificado:", certNumber);
         setValue('certificateNumber', certNumber);
         
         // Inicializar el array de agujas seleccionadas
@@ -513,76 +524,15 @@ const CertificateForm = ({ initialMaterialType }) => {
       case 'aguja':
         return (
           <Grid item xs={12}>
-            <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-              Selección de Agujas
-            </Typography>
-            <Divider sx={{ mb: 3 }} />
-            
-            <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="subtitle1">
-                Seleccione hasta 10 agujas para incluir en este certificado
-              </Typography>
-              
-              <Button
-                variant="contained"
-                size="small"
-                startIcon={<AddIcon />}
-                onClick={handleAddNeedle}
-                disabled={needleFields.length >= 10}
-              >
-                Añadir Aguja
-              </Button>
-            </Box>
-            
-            {/* Contenedor único con clase needle-selector para permitir scroll */}
-            <Box className="needle-selector">
-              {needleFields.map((field, index) => (
-                <Box key={field.id} sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
-                  <Controller
-                    name={`selectedNeedles.${index}.needleId`}
-                    control={control}
-                    rules={{ required: index === 0 ? 'Debe seleccionar al menos una aguja' : false }}
-                    render={({ field }) => (
-                      <FormControl fullWidth error={errors.selectedNeedles?.[index]?.needleId} sx={{ mr: 1 }}>
-                        <InputLabel>Aguja #{index + 1}</InputLabel>
-                        <Select
-                          {...field}
-                          label={`Aguja #${index + 1}`}
-                        >
-                          <MenuItem value="">Seleccionar aguja</MenuItem>
-                          {needleInventory.map((needle) => (
-                            <MenuItem 
-                              key={needle.id} 
-                              value={needle.id}
-                              disabled={watch('selectedNeedles')?.some(
-                                (selected, i) => i !== index && selected.needleId === needle.id
-                              )}
-                            >
-                              {needle.num || needle.serial_number} - {needle.description || 'Sin descripción'}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                        {errors.selectedNeedles?.[index]?.needleId && (
-                          <FormHelperText>{errors.selectedNeedles[index].needleId.message}</FormHelperText>
-                        )}
-                      </FormControl>
-                    )}
-                  />
-                  
-                  {index > 0 && (
-                    <IconButton color="error" onClick={() => handleRemoveNeedle(index)}>
-                      <DeleteIcon />
-                    </IconButton>
-                  )}
-                </Box>
-              ))}
-            </Box>
-            
-            {needleFields.length === 0 && (
-              <Alert severity="info" sx={{ mt: 2 }}>
-                No hay agujas seleccionadas. Haga clic en 'Añadir Aguja' para comenzar.
-              </Alert>
-            )}
+            <NeedlesForm 
+              control={control} 
+              errors={errors} 
+              watch={watch} 
+              setValue={setValue} 
+              getMaterialTemplate={getMaterialTemplate}
+              onNext={handleNext}
+              hideComments={true}
+            />
           </Grid>
         );
         
@@ -807,11 +757,9 @@ const CertificateForm = ({ initialMaterialType }) => {
             <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
               Archivos Adjuntos
             </Typography>
-            <AttachmentManager
-              attachments={attachmentsFields}
-              onAdd={handleAddAttachment}
-              onRemove={removeAttachment}
-            />
+            <Divider sx={{ mb: 3 }} />
+            
+            {renderAttachmentFields(watchMaterialType)}
           </>
         );
     }
@@ -1020,7 +968,7 @@ const CertificateForm = ({ initialMaterialType }) => {
                   >
                     <MenuItem value="">Seleccione un cliente</MenuItem>
                     {customers.map(customer => (
-                      <MenuItem key={customer.id} value={customer.id}>{customer.name}</MenuItem>
+                      <MenuItem key={customer.id} value={customer.id}>{customer.nombre}</MenuItem>
                     ))}
                   </TextField>
                 </Grid>
@@ -1040,7 +988,7 @@ const CertificateForm = ({ initialMaterialType }) => {
                   >
                     <MenuItem value="">Seleccione un inspector</MenuItem>
                     {inspectors.map(inspector => (
-                      <MenuItem key={inspector.id} value={inspector.id}>{inspector.name} ({inspector.code})</MenuItem>
+                      <MenuItem key={inspector.id} value={inspector.id}>{inspector.nombre} ({inspector.codigo_inspector})</MenuItem>
                     ))}
                   </TextField>
                 </Grid>
@@ -1054,19 +1002,19 @@ const CertificateForm = ({ initialMaterialType }) => {
                         <Typography variant="subtitle2" color="textSecondary">
                           Información del Cliente:
                         </Typography>
-                        {customers.filter(c => c.id === formData.customerId).map(customer => (
+                        {customers.filter(c => c.id === parseInt(formData.customerId)).map(customer => (
                           <Box key={customer.id} sx={{ ml: 2, mt: 1 }}>
                             <Typography variant="body2">
                               <strong>NIF:</strong> {customer.nif || 'No disponible'}
                             </Typography>
                             <Typography variant="body2">
-                              <strong>Localización:</strong> {customer.location || 'No disponible'}
+                              <strong>Localización:</strong> {customer.ubicacion || 'No disponible'}
                             </Typography>
                             <Typography variant="body2">
-                              <strong>Responsable de Calidad:</strong> {customer.quality_manager || 'No disponible'}
+                              <strong>Email:</strong> {customer.email || 'No disponible'}
                             </Typography>
                             <Typography variant="body2">
-                              <strong>Email:</strong> {customer.quality_manager_email || 'No disponible'}
+                              <strong>Teléfono:</strong> {customer.telefono || 'No disponible'}
                             </Typography>
                           </Box>
                         ))}
@@ -1081,10 +1029,10 @@ const CertificateForm = ({ initialMaterialType }) => {
                         <Typography variant="subtitle2" color="textSecondary">
                           Información del Inspector:
                         </Typography>
-                        {inspectors.filter(i => i.id === formData.inspectorId).map(inspector => (
+                        {inspectors.filter(i => i.id === parseInt(formData.inspectorId)).map(inspector => (
                           <Box key={inspector.id} sx={{ ml: 2, mt: 1 }}>
                             <Typography variant="body2">
-                              <strong>Código:</strong> {inspector.code || 'No disponible'}
+                              <strong>Código:</strong> {inspector.codigo_inspector || 'No disponible'}
                             </Typography>
                             <Typography variant="body2">
                               <strong>Email:</strong> {inspector.email || 'No disponible'}
@@ -1113,29 +1061,7 @@ const CertificateForm = ({ initialMaterialType }) => {
         {activeStep === 1 && (
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Información Adicional
-              </Typography>
-              <Divider sx={{ mb: 3 }} />
-              
               <Grid container spacing={3}>
-                <Grid item xs={12}>
-                  <Controller
-                    name="comments"
-                    control={control}
-                    render={({ field }) => (
-                      <TextField
-                        {...field}
-                        label="Comentarios"
-                        fullWidth
-                        multiline
-                        rows={4}
-                        variant="outlined"
-                      />
-                    )}
-                  />
-                </Grid>
-                
                 {/* Campos específicos según el tipo de material */}
                 {renderMaterialSpecificFields(watchMaterialType)}
                 
@@ -1146,6 +1072,27 @@ const CertificateForm = ({ initialMaterialType }) => {
                   <Divider sx={{ mb: 3 }} />
                   
                   {renderAttachmentFields(watchMaterialType)}
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
+                    Observaciones
+                  </Typography>
+                  <Divider sx={{ mb: 3 }} />
+                  <Controller
+                    name="comments"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        label="Observaciones"
+                        fullWidth
+                        multiline
+                        rows={4}
+                        variant="outlined"
+                      />
+                    )}
+                  />
                 </Grid>
               </Grid>
             </CardContent>

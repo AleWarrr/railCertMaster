@@ -122,7 +122,7 @@ export const login = async (username, password) => {
         // Si el endpoint existe, usar fetchApi normalmente
         const response = await fetchApi('/auth/login', {
           method: 'POST',
-          body: JSON.stringify({ username, password })
+          body: JSON.stringify({ email: username, password })
         });
         
         // Si el login fue exitoso, guardar el token
@@ -241,7 +241,17 @@ export const getInspector = async (id) => {
  * @returns {Promise<Array>} - List of needle types
  */
 export const getNeedleTypes = async () => {
-  return fetchApi('/needle-types');
+  try {
+    const result = await fetchApi('/needle-types');
+    if (Array.isArray(result)) {
+      return result;
+    }
+    console.error('getNeedleTypes: No es un array:', result);
+    return [];
+  } catch (error) {
+    console.error('Error en getNeedleTypes:', error);
+    return [];
+  }
 };
 
 /**
@@ -315,7 +325,14 @@ export const deleteCertificateAttachment = async (attachmentId) => {
  * @returns {Promise<Array>} - List of needles
  */
 export const getNeedleInventory = async () => {
-  return fetchApi('/needle-inventory');
+  try {
+    const result = await fetchApi('/needle-inventory');
+    // Asegurarnos de que siempre devolvemos un array
+    return Array.isArray(result) ? result : (result && Array.isArray(result.data) ? result.data : []);
+  } catch (error) {
+    console.error('Error en getNeedleInventory:', error);
+    return [];
+  }
 };
 
 /**
@@ -418,4 +435,48 @@ export const deleteInspector = async (id) => {
   return fetchApi(`/inspectors/${id}`, {
     method: 'DELETE'
   });
+};
+
+/**
+ * Get authentication headers for API requests
+ * @returns {Object} - Headers object with authorization token if available
+ */
+const getHeaders = () => {
+  const headers = {
+    'Content-Type': 'application/json',
+  };
+  
+  // Incluir token de autenticación si existe
+  const authToken = localStorage.getItem('authToken');
+  if (authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`;
+  }
+  
+  return headers;
+};
+
+/**
+ * Get customers by company ID (fabricante)
+ * @param {number} companyId - Company ID (fabricante)
+ * @returns {Promise<Array>} - List of customers related to this company
+ */
+export const getCustomersByCompanyId = async (companyId) => {
+  if (!companyId) return [];
+  
+  try {
+    const response = await fetch(`${API_BASE_URL}/companies/${companyId}/customers`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Error obteniendo clientes para esta empresa');
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching customers by company ID:', error);
+    return [];
+  }
 };
