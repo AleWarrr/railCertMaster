@@ -174,7 +174,26 @@ export const logout = async () => {
  */
 export const getCurrentUser = () => {
   const userData = localStorage.getItem('userData');
-  return userData ? JSON.parse(userData) : null;
+  if (!userData) return null;
+
+  try {
+    const user = JSON.parse(userData);
+    
+    // Para usuarios de prueba, asignar un fabricante_id si no existe
+    if (user && !user.fabricante_id && user.company) {
+      // Asignar el ID 1 por defecto para la empresa "Talleres Alegría"
+      user.fabricante_id = 1;
+      console.log('Se ha asignado fabricante_id=1 al usuario actual:', user);
+      
+      // Actualizar los datos en localStorage
+      localStorage.setItem('userData', JSON.stringify(user));
+    }
+    
+    return user;
+  } catch (error) {
+    console.error('Error parsing user data:', error);
+    return null;
+  }
 };
 
 /**
@@ -342,6 +361,23 @@ export const getNeedleInventory = async () => {
  */
 export const getNeedleInventoryByType = async (typeId) => {
   return fetchApi(`/needle-inventory/type/${typeId}`);
+};
+
+/**
+ * Get available needles by company ID
+ * @param {number} companyId - Company ID
+ * @returns {Promise<Array>} - List of needles associated with the company
+ */
+export const getNeedleInventoryByCompanyId = async (companyId) => {
+  try {
+    if (!companyId) return [];
+    
+    const result = await fetchApi(`/needle-inventory/company/${companyId}`);
+    return Array.isArray(result) ? result : (result && Array.isArray(result.data) ? result.data : []);
+  } catch (error) {
+    console.error('Error en getNeedleInventoryByCompanyId:', error);
+    return [];
+  }
 };
 
 /**

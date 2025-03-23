@@ -1279,16 +1279,51 @@ app.get('/api/companies/:id/customers', async (req, res) => {
   }
 });
 
+// Get needle inventory by company ID
+app.get('/api/needle-inventory/company/:companyId', async (req, res) => {
+  try {
+    const companyId = req.params.companyId;
+    console.log(`Buscando agujas para la empresa ID: ${companyId}`);
+    
+    const sql = `
+      SELECT 
+        n.id, 
+        n.num_aguja as num, 
+        n.colada as description, 
+        n.fabricante_id as company_id, 
+        f.nombre as company_name
+      FROM agujas n
+      LEFT JOIN fabricantes f ON n.fabricante_id = f.id
+      WHERE n.fabricante_id = ?
+    `;
+    
+    const rows = await runQuery(sql, [companyId]);
+    console.log(`Agujas encontradas: ${rows.length}`, rows);
+    res.json(rows);
+  } catch (error) {
+    console.error('Error al obtener inventario de agujas por empresa:', error);
+    res.status(500).json({ error: 'Error al obtener inventario de agujas por empresa' });
+  }
+});
+
 // Get needle inventory
 app.get('/api/needle-inventory', async (req, res) => {
   try {
+    console.log('Obteniendo todo el inventario de agujas');
+    
     const sql = `
-      SELECT n.id, n.num_aguja as num, n.colada as description, f.id as company_id, f.nombre as company_name
+      SELECT 
+        n.id, 
+        n.num_aguja as num, 
+        n.colada as description, 
+        n.fabricante_id as company_id, 
+        f.nombre as company_name
       FROM agujas n
       LEFT JOIN fabricantes f ON n.fabricante_id = f.id
     `;
     
-    const rows = await db.all(sql);
+    const rows = await runQuery(sql);
+    console.log(`Total agujas en inventario: ${rows.length}`);
     res.json(rows);
   } catch (error) {
     console.error('Error al obtener inventario de agujas:', error);

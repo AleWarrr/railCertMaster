@@ -28,6 +28,7 @@ import {
   getCustomers, 
   getInspectors,
   getNeedleInventory, 
+  getNeedleInventoryByCompanyId,
   getCustomersByCompanyId,
   getCurrentUser
 } from '../utils/api';
@@ -69,11 +70,10 @@ const NeedlesForm = ({ control, errors, watch, setValue, getMaterialTemplate, on
         const user = getCurrentUser();
         console.log('Usuario actual:', user);
         
-        // Fetch companies, inspectors, and inventory in parallel
-        const [companiesRes, inspectorsRes, needleInventoryRes] = await Promise.all([
+        // Fetch companies and inspectors in parallel
+        const [companiesRes, inspectorsRes] = await Promise.all([
           getCompanies(),
-          getInspectors(),
-          getNeedleInventory()
+          getInspectors()
         ]);
         
         console.log('Empresas cargadas:', companiesRes);
@@ -81,6 +81,23 @@ const NeedlesForm = ({ control, errors, watch, setValue, getMaterialTemplate, on
         
         setCompanies(companiesRes);
         setInspectors(inspectorsRes);
+        
+        // Cargar las agujas dependiendo del usuario
+        let needleInventoryRes = [];
+        if (user && user.fabricante_id) {
+          const companyId = user.fabricante_id;
+          console.log('Cargando agujas para la empresa ID:', companyId);
+          needleInventoryRes = await getNeedleInventoryByCompanyId(companyId);
+          console.log('Agujas de la empresa cargadas:', needleInventoryRes);
+        } else if (user && user.company && user.company.id) {
+          const companyId = user.company.id;
+          console.log('Cargando agujas para la empresa ID (desde user.company):', companyId);
+          needleInventoryRes = await getNeedleInventoryByCompanyId(companyId);
+          console.log('Agujas de la empresa cargadas:', needleInventoryRes);
+        } else {
+          console.log('Cargando todas las agujas (sin filtro de empresa)');
+          needleInventoryRes = await getNeedleInventory();
+        }
         setNeedleInventory(needleInventoryRes);
         
         // Si el usuario tiene una empresa asociada, cargar sus clientes
@@ -360,14 +377,29 @@ const NeedlesForm = ({ control, errors, watch, setValue, getMaterialTemplate, on
                             <MenuItem value="">Seleccione una aguja</MenuItem>
                             {/* Filtramos el inventario para mostrar solo las agujas del fabricante actual */}
                             {(Array.isArray(needleInventory) ? needleInventory : [])
-                              .filter(needle => 
-                                currentUser?.fabricante_id 
-                                  ? needle.company_id === parseInt(currentUser.fabricante_id)
-                                  : true
-                              )
+                              .map(needle => {
+                                console.log('Evaluando aguja:', needle);
+                                console.log('Usuario actual:', currentUser);
+                                console.log('Comparando:', needle.company_id, ' con ', currentUser?.fabricante_id);
+                                return needle;
+                              })
+                              .filter(needle => {
+                                // No filtramos si no hay usuario o fabricante_id
+                                if (!currentUser || !currentUser.fabricante_id) {
+                                  return true;
+                                }
+                                // Convertir ambos a números para comparar correctamente
+                                const needleCompanyId = Number(needle.company_id);
+                                const userCompanyId = Number(currentUser.fabricante_id);
+                                console.log(`Comparando IDs: aguja=${needleCompanyId}, usuario=${userCompanyId}, coincide=${needleCompanyId === userCompanyId}`);
+                                
+                                return needleCompanyId === userCompanyId;
+                              })
                               .map(needle => (
-                                <MenuItem key={needle.id} value={needle.num}>
-                                  {needle.num} - {needle.description || 'Sin descripción'}
+                                <MenuItem key={needle.id} value={needle.id}>
+                                  <Box>
+                                    <Typography variant="body1">{needle.num}</Typography>
+                                  </Box>
                                 </MenuItem>
                               ))
                             }

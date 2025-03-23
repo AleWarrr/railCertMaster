@@ -55,6 +55,7 @@ import {
   getCustomers,
   getInspectors,
   getNeedleInventory,
+  getNeedleInventoryByCompanyId,
   getCustomersByCompanyId,
   getCurrentUser
 } from '../utils/api';
@@ -195,10 +196,6 @@ const CertificateForm = ({ initialMaterialType }) => {
         const needleTypesData = await getNeedleTypes();
         setNeedleTypes(needleTypesData || []);
         
-        // Obtener inventario de agujas
-        const needleInventoryData = await getNeedleInventory();
-        setNeedleInventory(Array.isArray(needleInventoryData) ? needleInventoryData : []);
-        
         // Obtener información del usuario actual
         const currentUser = getCurrentUser();
         
@@ -210,6 +207,24 @@ const CertificateForm = ({ initialMaterialType }) => {
         const companiesData = await getCompanies();
         if (Array.isArray(companiesData) && companiesData.length > 0) {
           setCompanyProfile(companiesData[0]);
+        }
+        
+        // Cargar agujas según el fabricante del usuario
+        if (currentUser && currentUser.company && currentUser.company.id) {
+          // Si el usuario tiene una empresa asociada, obtener sus agujas por ID de empresa
+          const needleInventoryData = await getNeedleInventoryByCompanyId(currentUser.company.id);
+          setNeedleInventory(Array.isArray(needleInventoryData) ? needleInventoryData : []);
+          console.log('Agujas de la empresa cargadas:', needleInventoryData);
+        } else if (currentUser && currentUser.fabricante_id) {
+          // Alternativa: si el usuario tiene fabricante_id
+          const needleInventoryData = await getNeedleInventoryByCompanyId(currentUser.fabricante_id);
+          setNeedleInventory(Array.isArray(needleInventoryData) ? needleInventoryData : []);
+          console.log('Agujas de la empresa cargadas (por fabricante_id):', needleInventoryData);
+        } else {
+          // Si no hay empresa asociada, cargar todas las agujas
+          const needleInventoryData = await getNeedleInventory();
+          setNeedleInventory(Array.isArray(needleInventoryData) ? needleInventoryData : []);
+          console.log('Todas las agujas cargadas (sin filtro de empresa)');
         }
         
         // Cargar clientes según el fabricante del usuario
