@@ -49,9 +49,9 @@ export const fetchApi = async (endpoint, options = {}) => {
  */
 export const login = async (username, password) => {
   try {
-    // Para desarrollo: simulación de login cuando el endpoint no está disponible
-    if (username === 'admin' && password === 'admin') {
-      const userData = {
+    // Para desarrollo: simulación de login con usuarios predefinidos
+    const mockUsers = {
+      admin: {
         id: 'admin',
         username: 'admin',
         name: 'Administrador',
@@ -70,19 +70,8 @@ export const login = async (username, password) => {
           registrationNumber: 'REG987654',
           taxId: 'B87654321'
         }
-      };
-      
-      localStorage.setItem('authToken', 'admin-token');
-      localStorage.setItem('userData', JSON.stringify(userData));
-      localStorage.setItem('companyProfile', JSON.stringify(userData.company));
-      
-      return { 
-        success: true, 
-        token: 'admin-token', 
-        user: userData 
-      };
-    } else if (username === 'demo' && password === 'demo') {
-      const userData = {
+      },
+      demo: {
         id: 'demo',
         username: 'demo',
         name: 'Usuario Demo',
@@ -101,40 +90,59 @@ export const login = async (username, password) => {
           registrationNumber: 'REG12345',
           taxId: 'B12345678'
         }
-      };
+      }
+    };
+    
+    // Verificar si debemos usar usuarios de prueba o intentar el backend real
+    if (mockUsers[username] && password === username) {
+      // En desarrollo: devolver usuario de prueba con su token
+      const userData = mockUsers[username];
+      const token = `${username}-token`;
       
-      localStorage.setItem('authToken', 'demo-token');
+      localStorage.setItem('authToken', token);
       localStorage.setItem('userData', JSON.stringify(userData));
       localStorage.setItem('companyProfile', JSON.stringify(userData.company));
       
-      return {
-        success: true,
-        token: 'demo-token',
-        user: userData
+      return { 
+        success: true, 
+        token: token, 
+        user: userData 
       };
     }
     
-    // Si no es un usuario de desarrollo, intentar con el backend real
-    // Comentado temporalmente hasta que el endpoint esté disponible
-    /*
-    const response = await fetchApi('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ username, password })
-    });
-    
-    // Si el login fue exitoso, guardar el token
-    if (response.success && response.token) {
-      localStorage.setItem('authToken', response.token);
-      localStorage.setItem('userData', JSON.stringify(response.user));
-      if (response.user && response.user.company) {
-        localStorage.setItem('companyProfile', JSON.stringify(response.user.company));
+    // Intentar con el backend real - Este código eventualmente reemplazará la simulación
+    try {
+      // Crear una URL específica para verificar si el endpoint existe
+      const apiUrl = `${API_BASE_URL}/auth/login`;
+      
+      // Hacer un preflight para verificar si el endpoint existe
+      const preflight = await fetch(apiUrl, { method: 'OPTIONS' });
+      
+      if (preflight.ok) {
+        // Si el endpoint existe, usar fetchApi normalmente
+        const response = await fetchApi('/auth/login', {
+          method: 'POST',
+          body: JSON.stringify({ username, password })
+        });
+        
+        // Si el login fue exitoso, guardar el token
+        if (response.success && response.token) {
+          localStorage.setItem('authToken', response.token);
+          localStorage.setItem('userData', JSON.stringify(response.user));
+          if (response.user && response.user.company) {
+            localStorage.setItem('companyProfile', JSON.stringify(response.user.company));
+          }
+        }
+        
+        return response;
       }
+    } catch (apiError) {
+      // Si hay error con el endpoint real, continuamos con el flujo normal
+      console.log('API endpoint de login no disponible:', apiError);
     }
     
-    return response;
-    */
-    
-    // Si no es usuario de prueba y no hay backend, devolver error
+    // Si llegamos aquí, el usuario no coincide con los de prueba
+    // y/o el backend no está disponible
     return { 
       success: false, 
       error: 'Usuario o contraseña incorrectos. Por favor, verifica tus credenciales.' 
