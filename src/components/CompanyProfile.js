@@ -21,6 +21,8 @@ const CompanyProfile = () => {
   const [saving, setSaving] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [logoPreview, setLogoPreview] = useState('');
+  const [isReadOnly, setIsReadOnly] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
   
   const { control, handleSubmit, setValue, formState: { errors } } = useForm({
     defaultValues: {
@@ -43,6 +45,17 @@ const CompanyProfile = () => {
   useEffect(() => {
     const loadCompanyProfile = async () => {
       try {
+        // Verificar si hay un usuario logueado y obtener sus datos
+        const userData = window.api.getCurrentUser();
+        setCurrentUser(userData);
+        
+        // Determinar si el formulario debe ser de solo lectura
+        // Solo los administradores pueden editar el perfil de la empresa
+        if (userData && userData.role !== 'admin') {
+          setIsReadOnly(true);
+        }
+        
+        // Cargar el perfil de la empresa
         const result = await window.api.getCompanyProfile();
         if (result.success && result.data) {
           // Set form values from stored profile
@@ -59,7 +72,7 @@ const CompanyProfile = () => {
         console.error('Error loading company profile:', error);
         setSnackbar({
           open: true,
-          message: 'Failed to load company profile data.',
+          message: 'Error al cargar los datos del perfil de empresa.',
           severity: 'error'
         });
       } finally {
@@ -71,6 +84,8 @@ const CompanyProfile = () => {
   }, [setValue]);
 
   const handleLogoUpload = (event) => {
+    if (isReadOnly) return;
+    
     const file = event.target.files[0];
     if (file) {
       const reader = new FileReader();
@@ -84,6 +99,8 @@ const CompanyProfile = () => {
   };
 
   const onSubmit = async (data) => {
+    if (isReadOnly) return;
+    
     try {
       setSaving(true);
       const result = await window.api.saveCompanyProfile(data);
@@ -91,17 +108,17 @@ const CompanyProfile = () => {
       if (result.success) {
         setSnackbar({
           open: true,
-          message: 'Company profile saved successfully!',
+          message: '¡Perfil de empresa guardado correctamente!',
           severity: 'success'
         });
       } else {
-        throw new Error(result.error || 'Failed to save profile');
+        throw new Error(result.error || 'Error al guardar el perfil');
       }
     } catch (error) {
       console.error('Error saving company profile:', error);
       setSnackbar({
         open: true,
-        message: `Error saving profile: ${error.message}`,
+        message: `Error al guardar el perfil: ${error.message}`,
         severity: 'error'
       });
     } finally {
@@ -124,8 +141,14 @@ const CompanyProfile = () => {
   return (
     <Box sx={{ flexGrow: 1 }}>
       <Typography variant="h4" component="h1" gutterBottom>
-        Company Profile
+        Perfil de Empresa
       </Typography>
+      
+      {isReadOnly && (
+        <Alert severity="info" sx={{ mb: 3 }}>
+          Los datos del perfil de empresa solo pueden ser modificados por un administrador.
+        </Alert>
+      )}
       
       <form onSubmit={handleSubmit(onSubmit)}>
         <Grid container spacing={3}>
@@ -133,7 +156,7 @@ const CompanyProfile = () => {
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  Company Information
+                  Información de la Empresa
                 </Typography>
                 <Divider sx={{ mb: 3 }} />
                 
@@ -142,15 +165,16 @@ const CompanyProfile = () => {
                     <Controller
                       name="companyName"
                       control={control}
-                      rules={{ required: 'Company name is required' }}
+                      rules={{ required: 'El nombre de la empresa es obligatorio' }}
                       render={({ field }) => (
                         <TextField
                           {...field}
                           fullWidth
-                          label="Company Name"
+                          label="Nombre de la Empresa"
                           variant="outlined"
                           error={!!errors.companyName}
                           helperText={errors.companyName?.message}
+                          disabled={isReadOnly}
                         />
                       )}
                     />
@@ -160,15 +184,16 @@ const CompanyProfile = () => {
                     <Controller
                       name="contactName"
                       control={control}
-                      rules={{ required: 'Contact name is required' }}
+                      rules={{ required: 'El nombre de contacto es obligatorio' }}
                       render={({ field }) => (
                         <TextField
                           {...field}
                           fullWidth
-                          label="Contact Name"
+                          label="Nombre de Contacto"
                           variant="outlined"
                           error={!!errors.contactName}
                           helperText={errors.contactName?.message}
+                          disabled={isReadOnly}
                         />
                       )}
                     />
@@ -179,10 +204,10 @@ const CompanyProfile = () => {
                       name="email"
                       control={control}
                       rules={{ 
-                        required: 'Email is required',
+                        required: 'El email es obligatorio',
                         pattern: {
                           value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                          message: 'Invalid email address'
+                          message: 'Email inválido'
                         }
                       }}
                       render={({ field }) => (
@@ -193,6 +218,7 @@ const CompanyProfile = () => {
                           variant="outlined"
                           error={!!errors.email}
                           helperText={errors.email?.message}
+                          disabled={isReadOnly}
                         />
                       )}
                     />
@@ -206,8 +232,9 @@ const CompanyProfile = () => {
                         <TextField
                           {...field}
                           fullWidth
-                          label="Phone"
+                          label="Teléfono"
                           variant="outlined"
+                          disabled={isReadOnly}
                         />
                       )}
                     />
@@ -221,8 +248,9 @@ const CompanyProfile = () => {
                         <TextField
                           {...field}
                           fullWidth
-                          label="Website"
+                          label="Sitio Web"
                           variant="outlined"
+                          disabled={isReadOnly}
                         />
                       )}
                     />
@@ -236,8 +264,9 @@ const CompanyProfile = () => {
                         <TextField
                           {...field}
                           fullWidth
-                          label="Address"
+                          label="Dirección"
                           variant="outlined"
+                          disabled={isReadOnly}
                         />
                       )}
                     />
@@ -251,8 +280,9 @@ const CompanyProfile = () => {
                         <TextField
                           {...field}
                           fullWidth
-                          label="City"
+                          label="Ciudad"
                           variant="outlined"
+                          disabled={isReadOnly}
                         />
                       )}
                     />
@@ -266,8 +296,9 @@ const CompanyProfile = () => {
                         <TextField
                           {...field}
                           fullWidth
-                          label="State/Province"
+                          label="Provincia"
                           variant="outlined"
+                          disabled={isReadOnly}
                         />
                       )}
                     />
@@ -281,8 +312,9 @@ const CompanyProfile = () => {
                         <TextField
                           {...field}
                           fullWidth
-                          label="Zip/Postal Code"
+                          label="Código Postal"
                           variant="outlined"
+                          disabled={isReadOnly}
                         />
                       )}
                     />
@@ -296,8 +328,9 @@ const CompanyProfile = () => {
                         <TextField
                           {...field}
                           fullWidth
-                          label="Country"
+                          label="País"
                           variant="outlined"
+                          disabled={isReadOnly}
                         />
                       )}
                     />
@@ -305,7 +338,7 @@ const CompanyProfile = () => {
                 </Grid>
                 
                 <Typography variant="h6" gutterBottom sx={{ mt: 4 }}>
-                  Additional Information
+                  Información Legal
                 </Typography>
                 <Divider sx={{ mb: 3 }} />
                 
@@ -318,8 +351,9 @@ const CompanyProfile = () => {
                         <TextField
                           {...field}
                           fullWidth
-                          label="Company Registration Number"
+                          label="Número de Registro"
                           variant="outlined"
+                          disabled={isReadOnly}
                         />
                       )}
                     />
@@ -333,8 +367,9 @@ const CompanyProfile = () => {
                         <TextField
                           {...field}
                           fullWidth
-                          label="Tax ID / VAT Number"
+                          label="NIF/CIF"
                           variant="outlined"
+                          disabled={isReadOnly}
                         />
                       )}
                     />
@@ -348,92 +383,82 @@ const CompanyProfile = () => {
             <Card>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  Company Logo
+                  Logo de la Empresa
                 </Typography>
                 <Divider sx={{ mb: 3 }} />
                 
-                <Box 
-                  sx={{ 
-                    display: 'flex', 
-                    justifyContent: 'center', 
-                    alignItems: 'center',
+                <Box
+                  sx={{
+                    display: 'flex',
                     flexDirection: 'column',
+                    alignItems: 'center',
                     mb: 2
                   }}
                 >
                   {logoPreview ? (
-                    <Box 
+                    <Box
                       component="img"
                       src={logoPreview}
-                      alt="Company Logo"
-                      sx={{ 
-                        maxWidth: '100%', 
-                        maxHeight: '200px',
-                        objectFit: 'contain',
+                      alt="Logo de la empresa"
+                      sx={{
+                        maxWidth: '100%',
+                        maxHeight: 200,
                         mb: 2
                       }}
                     />
                   ) : (
-                    <Paper 
-                      elevation={0} 
-                      sx={{ 
-                        width: '100%', 
-                        height: '200px', 
-                        display: 'flex', 
-                        justifyContent: 'center', 
+                    <Paper
+                      sx={{
+                        width: '100%',
+                        height: 200,
+                        display: 'flex',
+                        justifyContent: 'center',
                         alignItems: 'center',
-                        border: '1px dashed #ccc',
+                        bgcolor: 'grey.100',
                         mb: 2
                       }}
                     >
                       <Typography variant="body2" color="text.secondary">
-                        No logo uploaded
+                        No hay logo
                       </Typography>
                     </Paper>
                   )}
                   
-                  <Button
-                    variant="contained"
-                    component="label"
-                    startIcon={<UploadIcon />}
-                  >
-                    Upload Logo
-                    <input
-                      type="file"
-                      hidden
-                      accept="image/*"
-                      onChange={handleLogoUpload}
-                    />
-                  </Button>
-                  <Typography variant="caption" color="text.secondary" sx={{ mt: 1, textAlign: 'center' }}>
-                    Recommended format: PNG or SVG with transparent background
-                  </Typography>
-                </Box>
-                
-                <Controller
-                  name="logoBase64"
-                  control={control}
-                  render={({ field }) => (
-                    <input type="hidden" {...field} />
+                  {!isReadOnly && (
+                    <Button
+                      variant="outlined"
+                      component="label"
+                      startIcon={<UploadIcon />}
+                      sx={{ mt: 2 }}
+                    >
+                      Subir Logo
+                      <input
+                        type="file"
+                        hidden
+                        onChange={handleLogoUpload}
+                        accept="image/*"
+                      />
+                    </Button>
                   )}
-                />
+                </Box>
               </CardContent>
             </Card>
-            
-            <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
-              <Button
-                type="submit"
-                variant="contained"
-                color="primary"
-                size="large"
-                startIcon={<SaveIcon />}
-                disabled={saving}
-              >
-                {saving ? 'Saving...' : 'Save Profile'}
-              </Button>
-            </Box>
           </Grid>
         </Grid>
+        
+        {!isReadOnly && (
+          <Box sx={{ mt: 3, textAlign: 'right' }}>
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              startIcon={<SaveIcon />}
+              disabled={saving}
+            >
+              {saving ? 'Guardando...' : 'Guardar Perfil'}
+            </Button>
+          </Box>
+        )}
       </form>
       
       <Snackbar

@@ -237,7 +237,7 @@ const NeedlesForm = ({ control, errors, watch, setValue, getMaterialTemplate, on
     <Card>
       <CardContent>
         <Typography variant="h6" gutterBottom>
-          Needle Certification Information
+          Información de Certificación de Agujas
         </Typography>
         <Divider sx={{ mb: 3 }} />
         
@@ -250,11 +250,11 @@ const NeedlesForm = ({ control, errors, watch, setValue, getMaterialTemplate, on
               render={({ field }) => (
                 <TextField
                   {...field}
-                  label="Certificate Number (Auto-generated)"
+                  label="Número de Certificado"
                   fullWidth
-                  variant="outlined"
-                  disabled
-                  InputLabelProps={{ shrink: true }}
+                  required
+                  error={!!errors.certificateNumber}
+                  helperText={errors.certificateNumber?.message}
                 />
               )}
             />
@@ -262,16 +262,47 @@ const NeedlesForm = ({ control, errors, watch, setValue, getMaterialTemplate, on
           
           <Grid item xs={12} sm={6}>
             <Controller
-              name="companyId"
+              name="issueDate"
               control={control}
-              rules={{ required: 'Company is required' }}
               render={({ field }) => (
-                <FormControl fullWidth error={!!errors.companyId}>
-                  <InputLabel id="company-label">Company</InputLabel>
+                <TextField
+                  {...field}
+                  label="Fecha de Emisión"
+                  type="date"
+                  fullWidth
+                  required
+                  InputLabelProps={{ shrink: true }}
+                  error={!!errors.issueDate}
+                  helperText={errors.issueDate?.message}
+                />
+              )}
+            />
+          </Grid>
+          
+          {/* Company Selection */}
+          <Grid item xs={12} sm={6}>
+            <FormControl fullWidth error={!!errors.companyId}>
+              <InputLabel id="company-label">Empresa Emisora</InputLabel>
+              <Controller
+                name="companyId"
+                control={control}
+                rules={{ required: 'Se requiere una empresa' }}
+                render={({ field }) => (
                   <Select
                     {...field}
                     labelId="company-label"
-                    label="Company"
+                    label="Empresa Emisora"
+                    onChange={(e) => {
+                      field.onChange(e);
+                      const companyId = e.target.value;
+                      const company = companies.find(c => c.id === parseInt(companyId));
+                      if (company) {
+                        setValue('seller', company.name);
+                        setValue('qualityResponsible', company.quality_responsible);
+                        setValue('qualityResponsibleEmail', company.quality_responsible_email);
+                        setValue('emittedIn', company.city);
+                      }
+                    }}
                   >
                     {companies.map((company) => (
                       <MenuItem key={company.id} value={company.id}>
@@ -279,70 +310,25 @@ const NeedlesForm = ({ control, errors, watch, setValue, getMaterialTemplate, on
                       </MenuItem>
                     ))}
                   </Select>
-                  {errors.companyId && (
-                    <FormHelperText>{errors.companyId.message}</FormHelperText>
-                  )}
-                </FormControl>
-              )}
-            />
+                )}
+              />
+              {errors.companyId && <FormHelperText>{errors.companyId.message}</FormHelperText>}
+            </FormControl>
           </Grid>
           
+          {/* Customer Selection */}
           <Grid item xs={12} sm={6}>
-            <Controller
-              name="emittedIn"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  label="Emitted In"
-                  fullWidth
-                  variant="outlined"
-                  disabled
-                  InputLabelProps={{ shrink: true }}
-                />
-              )}
-            />
-          </Grid>
-          
-          <Grid item xs={12} sm={6}>
-            <Controller
-              name="date"
-              control={control}
-              rules={{ required: 'Date is required' }}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  label="Certificate Date"
-                  type="date"
-                  fullWidth
-                  variant="outlined"
-                  InputLabelProps={{ shrink: true }}
-                  error={!!errors.date}
-                  helperText={errors.date?.message}
-                />
-              )}
-            />
-          </Grid>
-          
-          <Grid item xs={12}>
-            <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
-              Customer Information
-            </Typography>
-            <Divider sx={{ mb: 3 }} />
-          </Grid>
-          
-          <Grid item xs={12} sm={6}>
-            <Controller
-              name="customerId"
-              control={control}
-              rules={{ required: 'Customer is required' }}
-              render={({ field }) => (
-                <FormControl fullWidth error={!!errors.customerId}>
-                  <InputLabel id="customer-label">Customer</InputLabel>
+            <FormControl fullWidth error={!!errors.customerId}>
+              <InputLabel id="customer-label">Cliente</InputLabel>
+              <Controller
+                name="customerId"
+                control={control}
+                rules={{ required: 'Se requiere un cliente' }}
+                render={({ field }) => (
                   <Select
                     {...field}
                     labelId="customer-label"
-                    label="Customer"
+                    label="Cliente"
                   >
                     {customers.map((customer) => (
                       <MenuItem key={customer.id} value={customer.id}>
@@ -350,297 +336,21 @@ const NeedlesForm = ({ control, errors, watch, setValue, getMaterialTemplate, on
                       </MenuItem>
                     ))}
                   </Select>
-                  {errors.customerId && (
-                    <FormHelperText>{errors.customerId.message}</FormHelperText>
-                  )}
-                </FormControl>
-              )}
-            />
+                )}
+              />
+              {errors.customerId && <FormHelperText>{errors.customerId.message}</FormHelperText>}
+            </FormControl>
           </Grid>
           
+          {/* Inspector Selection */}
           <Grid item xs={12} sm={6}>
-            <Controller
-              name="customerNumber"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  label="Customer Number"
-                  fullWidth
-                  variant="outlined"
-                  disabled
-                  InputLabelProps={{ shrink: true }}
-                />
-              )}
-            />
-          </Grid>
-          
-          <Grid item xs={12} sm={6}>
-            <Controller
-              name="referenceNumber"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  label="Reference Number"
-                  fullWidth
-                  variant="outlined"
-                />
-              )}
-            />
-          </Grid>
-          
-          <Grid item xs={12} sm={6}>
-            <Controller
-              name="dateOfSale"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  label="Date of Sale"
-                  type="date"
-                  fullWidth
-                  variant="outlined"
-                  InputLabelProps={{ shrink: true }}
-                />
-              )}
-            />
-          </Grid>
-          
-          <Grid item xs={12} sm={6}>
-            <Controller
-              name="seller"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  label="Seller"
-                  fullWidth
-                  variant="outlined"
-                  disabled
-                  InputLabelProps={{ shrink: true }}
-                />
-              )}
-            />
-          </Grid>
-          
-          <Grid item xs={12} sm={6}>
-            <Controller
-              name="orderNumber"
-              control={control}
-              rules={{ required: 'Order number is required' }}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  label="Order Number"
-                  fullWidth
-                  variant="outlined"
-                  error={!!errors.orderNumber}
-                  helperText={errors.orderNumber?.message}
-                />
-              )}
-            />
-          </Grid>
-          
-          <Grid item xs={12} sm={6}>
-            <Controller
-              name="qualityResponsible"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  label="Quality Responsible"
-                  fullWidth
-                  variant="outlined"
-                  disabled
-                  InputLabelProps={{ shrink: true }}
-                />
-              )}
-            />
-          </Grid>
-          
-          <Grid item xs={12} sm={6}>
-            <Controller
-              name="qualityResponsibleEmail"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  label="Quality Responsible Email"
-                  fullWidth
-                  variant="outlined"
-                  disabled
-                  InputLabelProps={{ shrink: true }}
-                />
-              )}
-            />
-          </Grid>
-          
-          <Grid item xs={12}>
-            <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
-              Needle Specifications
-            </Typography>
-            <Divider sx={{ mb: 3 }} />
-            
-            {watch('needles') && watch('needles').length > 0 ? (
-              <Grid container spacing={2}>
-                <Grid item xs={12}>
-                  <Box sx={{ mb: 2 }}>
-                    <Grid container spacing={2}>
-                      <Grid item xs={8}><Typography variant="subtitle2">Needle Type</Typography></Grid>
-                      <Grid item xs={3}><Typography variant="subtitle2">Serial Number</Typography></Grid>
-                      <Grid item xs={1}></Grid>
-                    </Grid>
-                  </Box>
-                  
-                  {watch('needles').map((needle, index) => (
-                    <Box key={index} sx={{ mb: 2 }}>
-                      <Grid container spacing={2} alignItems="center">
-                        <Grid item xs={8}>
-                          <Controller
-                            name={`needles.${index}.needle_type_id`}
-                            control={control}
-                            render={({ field }) => (
-                              <FormControl fullWidth>
-                                <InputLabel id={`needle-type-label-${index}`}>Needle Type</InputLabel>
-                                <Select
-                                  {...field}
-                                  labelId={`needle-type-label-${index}`}
-                                  label="Needle Type"
-                                  onChange={(e) => {
-                                    field.onChange(e);
-                                    handleNeedleTypeChange(index, e.target.value);
-                                  }}
-                                >
-                                  {needleTypes.map((type) => (
-                                    <MenuItem key={type.id} value={type.id}>
-                                      {type.name} - {type.specification}
-                                    </MenuItem>
-                                  ))}
-                                </Select>
-                              </FormControl>
-                            )}
-                          />
-                        </Grid>
-                        <Grid item xs={3}>
-                          <Controller
-                            name={`needles.${index}.serial_number`}
-                            control={control}
-                            render={({ field }) => (
-                              <TextField
-                                {...field}
-                                label="Needle ID"
-                                fullWidth
-                                variant="outlined"
-                                onChange={(e) => {
-                                  field.onChange(e);
-                                  handleNeedleSearch(index, e.target.value);
-                                }}
-                                placeholder="Enter needle ID (e.g., 4444, 53292)"
-                                helperText="Enter a 4-5 digit needle ID"
-                              />
-                            )}
-                          />
-                        </Grid>
-                        <Grid item xs={1}>
-                          <IconButton 
-                            color="error" 
-                            onClick={() => handleRemoveNeedle(index)}
-                            disabled={watch('needles').length <= 1}
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        </Grid>
-                      </Grid>
-                    </Box>
-                  ))}
-                </Grid>
-                
-                <Grid item xs={12}>
-                  <Button
-                    startIcon={<AddIcon />}
-                    variant="outlined"
-                    onClick={handleAddNeedle}
-                    disabled={watch('needles').length >= 10}
-                    sx={{ mt: 1 }}
-                  >
-                    Add Needle Type
-                  </Button>
-                  {watch('needles').length >= 10 && (
-                    <Alert severity="info" sx={{ mt: 2 }}>
-                      Maximum of 10 needle types allowed.
-                    </Alert>
-                  )}
-                </Grid>
-              </Grid>
-            ) : (
-              <Box sx={{ mb: 2 }}>
-                <Button
-                  startIcon={<AddIcon />}
-                  variant="outlined"
-                  onClick={handleAddNeedle}
-                >
-                  Add Needle Type
-                </Button>
-              </Box>
-            )}
-          </Grid>
-          
-          <Grid item xs={12}>
-            <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
-              Destination Information
-            </Typography>
-            <Divider sx={{ mb: 3 }} />
-          </Grid>
-          
-          <Grid item xs={12} sm={6}>
-            <Controller
-              name="destinationStore"
-              control={control}
-              rules={{ required: 'Destination store is required' }}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  label="Destination Store"
-                  fullWidth
-                  variant="outlined"
-                  error={!!errors.destinationStore}
-                  helperText={errors.destinationStore?.message}
-                />
-              )}
-            />
-          </Grid>
-          
-          <Grid item xs={12} sm={6}>
-            <Controller
-              name="destinationAddress"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  label="Destination Address"
-                  fullWidth
-                  variant="outlined"
-                />
-              )}
-            />
-          </Grid>
-          
-          <Grid item xs={12}>
-            <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>
-              Inspection Information
-            </Typography>
-            <Divider sx={{ mb: 3 }} />
-          </Grid>
-          
-          <Grid item xs={12} sm={6}>
-            <Controller
-              name="inspectorId"
-              control={control}
-              rules={{ required: 'Inspector is required' }}
-              render={({ field }) => (
-                <FormControl fullWidth error={!!errors.inspectorId}>
-                  <InputLabel id="inspector-label">Inspector</InputLabel>
+            <FormControl fullWidth error={!!errors.inspectorId}>
+              <InputLabel id="inspector-label">Inspector</InputLabel>
+              <Controller
+                name="inspectorId"
+                control={control}
+                rules={{ required: 'Se requiere un inspector' }}
+                render={({ field }) => (
                   <Select
                     {...field}
                     labelId="inspector-label"
@@ -648,83 +358,129 @@ const NeedlesForm = ({ control, errors, watch, setValue, getMaterialTemplate, on
                   >
                     {inspectors.map((inspector) => (
                       <MenuItem key={inspector.id} value={inspector.id}>
-                        {inspector.name}
+                        {inspector.name} ({inspector.code})
                       </MenuItem>
                     ))}
                   </Select>
-                  {errors.inspectorId && (
-                    <FormHelperText>{errors.inspectorId.message}</FormHelperText>
-                  )}
-                </FormControl>
-              )}
-            />
+                )}
+              />
+              {errors.inspectorId && <FormHelperText>{errors.inspectorId.message}</FormHelperText>}
+            </FormControl>
           </Grid>
           
-          <Grid item xs={12} sm={6}>
+          {/* Needles Selection */}
+          <Grid item xs={12}>
+            <Typography variant="subtitle1" gutterBottom>
+              Selección de Agujas
+            </Typography>
+            
+            {(watch('needles') || []).map((needle, index) => (
+              <Box key={index} sx={{ mb: 2, p: 2, border: '1px solid #e0e0e0', borderRadius: 1 }}>
+                <Grid container spacing={2} alignItems="center">
+                  <Grid item xs={12} sm={5}>
+                    <FormControl fullWidth error={!!errors.needles?.[index]?.needle_type_id}>
+                      <InputLabel id={`needle-type-label-${index}`}>Tipo de Aguja</InputLabel>
+                      <Controller
+                        name={`needles[${index}].needle_type_id`}
+                        control={control}
+                        rules={{ required: 'Se requiere el tipo de aguja' }}
+                        render={({ field }) => (
+                          <Select
+                            {...field}
+                            labelId={`needle-type-label-${index}`}
+                            label="Tipo de Aguja"
+                            onChange={(e) => {
+                              handleNeedleTypeChange(index, e.target.value);
+                            }}
+                          >
+                            {needleTypes.map((type) => (
+                              <MenuItem key={type.id} value={type.id}>
+                                {type.name} - {type.specification}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        )}
+                      />
+                      {errors.needles?.[index]?.needle_type_id && (
+                        <FormHelperText>{errors.needles[index].needle_type_id.message}</FormHelperText>
+                      )}
+                    </FormControl>
+                  </Grid>
+                  
+                  <Grid item xs={12} sm={5}>
+                    <Controller
+                      name={`needles[${index}].serial_number`}
+                      control={control}
+                      rules={{ required: 'Se requiere el número de serie' }}
+                      render={({ field }) => (
+                        <TextField
+                          {...field}
+                          label="Número de Serie"
+                          fullWidth
+                          error={!!errors.needles?.[index]?.serial_number}
+                          helperText={errors.needles?.[index]?.serial_number?.message}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            handleNeedleSearch(index, e.target.value);
+                          }}
+                        />
+                      )}
+                    />
+                  </Grid>
+                  
+                  <Grid item xs={2} sm={2}>
+                    <IconButton 
+                      color="error" 
+                      onClick={() => handleRemoveNeedle(index)}
+                      disabled={(watch('needles') || []).length <= 1}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </Grid>
+                </Grid>
+              </Box>
+            ))}
+            
+            <Button
+              variant="outlined"
+              startIcon={<AddIcon />}
+              onClick={handleAddNeedle}
+              sx={{ mt: 1 }}
+              disabled={(watch('needles') || []).length >= 10}
+            >
+              Añadir Aguja
+            </Button>
+          </Grid>
+          
+          {/* Comments */}
+          <Grid item xs={12}>
             <Controller
-              name="inspectorCode"
+              name="comments"
               control={control}
               render={({ field }) => (
                 <TextField
                   {...field}
-                  label="Inspector Code"
+                  label="Comentarios"
+                  multiline
+                  rows={4}
                   fullWidth
-                  variant="outlined"
-                  disabled
-                  InputLabelProps={{ shrink: true }}
                 />
-              )}
-            />
-          </Grid>
-          
-          <Grid item xs={12} sm={6}>
-            <Controller
-              name="inspectorEmail"
-              control={control}
-              render={({ field }) => (
-                <TextField
-                  {...field}
-                  label="Inspector Email"
-                  fullWidth
-                  variant="outlined"
-                  disabled
-                  InputLabelProps={{ shrink: true }}
-                />
-              )}
-            />
-          </Grid>
-          
-          <Grid item xs={12} sm={6}>
-            <Controller
-              name="status"
-              control={control}
-              render={({ field }) => (
-                <FormControl fullWidth>
-                  <InputLabel id="status-label">Status</InputLabel>
-                  <Select
-                    {...field}
-                    labelId="status-label"
-                    label="Status"
-                    defaultValue="draft"
-                  >
-                    <MenuItem value="draft">Draft</MenuItem>
-                    <MenuItem value="final">Final</MenuItem>
-                  </Select>
-                </FormControl>
               )}
             />
           </Grid>
         </Grid>
+        
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
+          <Button
+            variant="contained"
+            color="primary"
+            endIcon={<NextIcon />}
+            onClick={onNext}
+          >
+            Siguiente
+          </Button>
+        </Box>
       </CardContent>
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 2 }}>
-        <Button
-          variant="contained"
-          endIcon={<NextIcon />}
-          onClick={onNext}
-        >
-          Next: Attachments
-        </Button>
-      </Box>
     </Card>
   );
 };

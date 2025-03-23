@@ -11,11 +11,58 @@ import { v4 as uuidv4 } from 'uuid';
 
 // Compatibility layer for window.api.* functions
 const apiAdapter = {
+  // Authentication
+  login: async (credentials) => {
+    try {
+      const result = await api.login(credentials.username, credentials.password);
+      if (result.success) {
+        // Guardar la empresa del usuario en memoria
+        if (result.user && result.user.company) {
+          localStorage.setItem('companyProfile', JSON.stringify(result.user.company));
+        }
+      }
+      return result;
+    } catch (error) {
+      console.error('Error in login:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  logout: async () => {
+    try {
+      const result = await api.logout();
+      // Limpiar datos de empresa almacenados
+      localStorage.removeItem('companyProfile');
+      return result;
+    } catch (error) {
+      console.error('Error in logout:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  isAuthenticated: () => {
+    return api.isAuthenticated();
+  },
+
+  getCurrentUser: () => {
+    return api.getCurrentUser();
+  },
+
   // Company profile
   getCompanyProfile: async () => {
     try {
+      // Primero intentar obtener el perfil de la sesión actual
+      const companyProfileStr = localStorage.getItem('companyProfile');
+      if (companyProfileStr) {
+        const companyProfile = JSON.parse(companyProfileStr);
+        return { success: true, data: companyProfile };
+      }
+      
+      // Si no está en la sesión, obtener de la API
       const companies = await api.getCompanies();
       if (companies && companies.length > 0) {
+        // Guardar en localStorage para futuras consultas
+        localStorage.setItem('companyProfile', JSON.stringify(companies[0]));
         return { 
           success: true, 
           data: companies[0] 

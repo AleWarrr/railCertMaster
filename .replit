@@ -4,7 +4,7 @@ modules = ["nodejs-20"]
 channel = "stable-24_05"
 
 [workflows]
-runButton = "Project"
+runButton = "API and React Dev"
 
 [[workflows.workflow]]
 name = "Project"
@@ -78,6 +78,19 @@ task = "packager.installForAll"
 task = "shell.exec"
 args = "node server.js"
 waitForPort = 5000
+
+[[workflows.workflow]]
+name = "API and React Dev"
+author = 40771362
+mode = "parallel"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node server.js"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd . && npm start"
 
 [deployment]
 run = ["sh", "-c", "cd . && npm start"]

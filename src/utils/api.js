@@ -13,31 +13,82 @@ const API_BASE_URL = 'http://localhost:5000/api';
  * @param {Object} body - Request body for POST/PUT requests
  * @returns {Promise<Object>} - Promise with API response
  */
-const fetchApi = async (endpoint, method = 'GET', body = null) => {
-  const options = {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-    }
-  };
-
-  if (body) {
-    options.body = JSON.stringify(body);
-  }
-
+export const fetchApi = async (endpoint, options = {}) => {
   try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
-    
+    const url = `${API_BASE_URL}${endpoint}`;
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        // Incluir token de autenticación si existe
+        ...(localStorage.getItem('authToken') && {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        }),
+        ...options.headers,
+      },
+    });
+
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`API error (${response.status}): ${errorText}`);
+      throw new Error(`Error ${response.status}: ${errorText}`);
     }
-    
-    return await response.json();
+
+    const data = await response.json();
+    return data;
   } catch (error) {
-    console.error(`Error in API call to ${endpoint}:`, error);
-    throw error;
+    console.error('API error:', error);
+    return { success: false, error: error.message };
   }
+};
+
+/**
+ * Login to the application
+ * @param {string} username - Username
+ * @param {string} password - Password
+ * @returns {Promise<Object>} - Login response with token and user data
+ */
+export const login = async (username, password) => {
+  const response = await fetchApi('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ username, password })
+  });
+  
+  // Si el login fue exitoso, guardar el token
+  if (response.success && response.token) {
+    localStorage.setItem('authToken', response.token);
+    localStorage.setItem('userData', JSON.stringify(response.user));
+  }
+  
+  return response;
+};
+
+/**
+ * Logout from the application
+ * @returns {Promise<Object>} - Logout response
+ */
+export const logout = async () => {
+  // Eliminar token y datos del usuario
+  localStorage.removeItem('authToken');
+  localStorage.removeItem('userData');
+  
+  return { success: true };
+};
+
+/**
+ * Get current user data
+ * @returns {Object|null} - User data or null if not logged in
+ */
+export const getCurrentUser = () => {
+  const userData = localStorage.getItem('userData');
+  return userData ? JSON.parse(userData) : null;
+};
+
+/**
+ * Check if user is authenticated
+ * @returns {boolean} - True if authenticated
+ */
+export const isAuthenticated = () => {
+  return !!localStorage.getItem('authToken');
 };
 
 /**
@@ -122,7 +173,10 @@ export const getCertificate = async (id) => {
  * @returns {Promise<Object>} - Response with new certificate ID and number
  */
 export const createCertificate = async (certificateData) => {
-  return fetchApi('/certificates', 'POST', certificateData);
+  return fetchApi('/certificates', {
+    method: 'POST',
+    body: JSON.stringify(certificateData)
+  });
 };
 
 /**
@@ -132,7 +186,10 @@ export const createCertificate = async (certificateData) => {
  * @returns {Promise<Object>} - Success response
  */
 export const updateCertificate = async (id, certificateData) => {
-  return fetchApi(`/certificates/${id}`, 'PUT', certificateData);
+  return fetchApi(`/certificates/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(certificateData)
+  });
 };
 
 /**
@@ -142,7 +199,10 @@ export const updateCertificate = async (id, certificateData) => {
  * @returns {Promise<Object>} - Success response
  */
 export const addCertificateAttachment = async (certificateId, attachmentData) => {
-  return fetchApi(`/certificates/${certificateId}/attachments`, 'POST', attachmentData);
+  return fetchApi(`/certificates/${certificateId}/attachments`, {
+    method: 'POST',
+    body: JSON.stringify(attachmentData)
+  });
 };
 
 /**
@@ -151,7 +211,9 @@ export const addCertificateAttachment = async (certificateId, attachmentData) =>
  * @returns {Promise<Object>} - Success response
  */
 export const deleteCertificateAttachment = async (attachmentId) => {
-  return fetchApi(`/attachments/${attachmentId}`, 'DELETE');
+  return fetchApi(`/attachments/${attachmentId}`, {
+    method: 'DELETE'
+  });
 };
 
 /**
@@ -186,5 +248,80 @@ export const searchNeedlesByNum = async (numQuery) => {
  * @returns {Promise<Object>} - Response with new needle data
  */
 export const addNeedleToInventory = async (needleData) => {
-  return fetchApi('/needle-inventory', 'POST', needleData);
+  return fetchApi('/needle-inventory', {
+    method: 'POST',
+    body: JSON.stringify(needleData)
+  });
+};
+
+/**
+ * Create a new customer
+ * @param {Object} customerData - Customer data with name, location, nif, etc.
+ * @returns {Promise<Object>} - Response with the new customer
+ */
+export const createCustomer = async (customerData) => {
+  return fetchApi('/customers', {
+    method: 'POST',
+    body: JSON.stringify(customerData)
+  });
+};
+
+/**
+ * Update an existing customer
+ * @param {number} id - Customer ID
+ * @param {Object} customerData - Updated customer data
+ * @returns {Promise<Object>} - Response with the updated customer
+ */
+export const updateCustomer = async (id, customerData) => {
+  return fetchApi(`/customers/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(customerData)
+  });
+};
+
+/**
+ * Delete a customer
+ * @param {number} id - Customer ID
+ * @returns {Promise<Object>} - Success response
+ */
+export const deleteCustomer = async (id) => {
+  return fetchApi(`/customers/${id}`, {
+    method: 'DELETE'
+  });
+};
+
+/**
+ * Create a new inspector
+ * @param {Object} inspectorData - Inspector data with name, code, email
+ * @returns {Promise<Object>} - Response with the new inspector
+ */
+export const createInspector = async (inspectorData) => {
+  return fetchApi('/inspectors', {
+    method: 'POST',
+    body: JSON.stringify(inspectorData)
+  });
+};
+
+/**
+ * Update an existing inspector
+ * @param {number} id - Inspector ID
+ * @param {Object} inspectorData - Updated inspector data
+ * @returns {Promise<Object>} - Response with the updated inspector
+ */
+export const updateInspector = async (id, inspectorData) => {
+  return fetchApi(`/inspectors/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(inspectorData)
+  });
+};
+
+/**
+ * Delete an inspector
+ * @param {number} id - Inspector ID
+ * @returns {Promise<Object>} - Success response
+ */
+export const deleteInspector = async (id) => {
+  return fetchApi(`/inspectors/${id}`, {
+    method: 'DELETE'
+  });
 };

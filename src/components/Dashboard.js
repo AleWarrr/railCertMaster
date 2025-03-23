@@ -18,14 +18,17 @@ import {
   Description as DescriptionIcon,
   Business as BusinessIcon,
   Add as AddIcon,
-  Edit as EditIcon
+  Edit as EditIcon,
+  Person as PersonIcon,
+  ExitToApp as LogoutIcon
 } from '@mui/icons-material';
 import { getCertificates, getCompanyProfile } from '../utils/dataStore';
 
-const Dashboard = () => {
+const Dashboard = ({ materialType }) => {
   const navigate = useNavigate();
   const [certificates, setCertificates] = useState([]);
   const [companyProfile, setCompanyProfile] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [openSnackbar, setOpenSnackbar] = useState(false);
@@ -34,6 +37,15 @@ const Dashboard = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
+        
+        // Obtener datos del usuario actual
+        const userData = window.api.getCurrentUser();
+        if (!userData) {
+          // Si no hay datos de usuario, redireccionar al login
+          navigate('/login');
+          return;
+        }
+        setCurrentUser(userData);
         
         // Get company profile
         const profileResult = await window.api.getCompanyProfile();
@@ -51,7 +63,7 @@ const Dashboard = () => {
         }
       } catch (err) {
         console.error('Error loading dashboard data:', err);
-        setError('Failed to load dashboard data. Please try again.');
+        setError('Error al cargar los datos del panel. Por favor, inténtelo de nuevo.');
         setOpenSnackbar(true);
       } finally {
         setLoading(false);
@@ -59,10 +71,22 @@ const Dashboard = () => {
     };
 
     fetchData();
-  }, []);
+  }, [navigate]);
 
   const handleCloseSnackbar = () => {
     setOpenSnackbar(false);
+  };
+  
+  const handleLogout = async () => {
+    try {
+      await window.api.logout();
+      // Recargar la página para asegurar que los cambios se aplican
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Error during logout:', error);
+      setError('Error al cerrar sesión. Por favor, inténtelo de nuevo.');
+      setOpenSnackbar(true);
+    }
   };
 
   if (loading) {
@@ -75,9 +99,27 @@ const Dashboard = () => {
 
   return (
     <Box sx={{ flexGrow: 1 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Dashboard
-      </Typography>
+      <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} justifyContent="space-between" mb={3}>
+        <Typography variant="h4" component="h1" gutterBottom>
+          Panel Principal
+        </Typography>
+        
+        {currentUser && (
+          <Box display="flex" alignItems="center" gap={1}>
+            <Typography variant="subtitle1">
+              Bienvenido, {currentUser.name || currentUser.username}
+            </Typography>
+            <Button 
+              variant="outlined" 
+              size="small" 
+              startIcon={<LogoutIcon />}
+              onClick={handleLogout}
+            >
+              Cerrar Sesión
+            </Button>
+          </Box>
+        )}
+      </Box>
       
       <Grid container spacing={3}>
         {/* Company Profile Card */}
@@ -87,25 +129,28 @@ const Dashboard = () => {
               <Box display="flex" alignItems="center" mb={2}>
                 <BusinessIcon color="primary" fontSize="large" sx={{ mr: 2 }} />
                 <Typography variant="h5" component="div">
-                  Company Profile
+                  Perfil de Empresa
                 </Typography>
               </Box>
               
               {companyProfile && Object.keys(companyProfile).length > 0 ? (
                 <>
                   <Typography variant="body1" gutterBottom>
-                    <strong>Company Name:</strong> {companyProfile.companyName || 'Not set'}
+                    <strong>Nombre de Empresa:</strong> {companyProfile.companyName || 'No configurado'}
                   </Typography>
                   <Typography variant="body1" gutterBottom>
-                    <strong>Contact:</strong> {companyProfile.contactName || 'Not set'}
+                    <strong>Contacto:</strong> {companyProfile.contactName || 'No configurado'}
                   </Typography>
                   <Typography variant="body1" gutterBottom>
-                    <strong>Email:</strong> {companyProfile.email || 'Not set'}
+                    <strong>Email:</strong> {companyProfile.email || 'No configurado'}
+                  </Typography>
+                  <Typography variant="caption" display="block" color="text.secondary" mt={2}>
+                    Estos datos se utilizarán en todos los certificados generados.
                   </Typography>
                 </>
               ) : (
                 <Alert severity="info" sx={{ mt: 2 }}>
-                  No company profile has been set up. Please create a profile to continue.
+                  No se ha configurado el perfil de empresa. Por favor, cree un perfil para continuar.
                 </Alert>
               )}
             </CardContent>
@@ -114,22 +159,64 @@ const Dashboard = () => {
                 startIcon={companyProfile ? <EditIcon /> : <AddIcon />}
                 variant="contained" 
                 color="primary" 
-                onClick={() => navigate('/company-profile')}
+                onClick={() => navigate('/perfil-empresa')}
               >
-                {companyProfile ? 'Edit' : 'Create'} Profile
+                {companyProfile ? 'Ver' : 'Crear'} Perfil
+              </Button>
+            </CardActions>
+          </Card>
+        </Grid>
+        
+        {/* User Profile Card */}
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Box display="flex" alignItems="center" mb={2}>
+                <PersonIcon color="primary" fontSize="large" sx={{ mr: 2 }} />
+                <Typography variant="h5" component="div">
+                  Mi Perfil
+                </Typography>
+              </Box>
+              
+              {currentUser ? (
+                <>
+                  <Typography variant="body1" gutterBottom>
+                    <strong>Nombre:</strong> {currentUser.name || 'No configurado'}
+                  </Typography>
+                  <Typography variant="body1" gutterBottom>
+                    <strong>Email:</strong> {currentUser.email || 'No configurado'}
+                  </Typography>
+                  <Typography variant="body1" gutterBottom>
+                    <strong>Rol:</strong> {currentUser.role === 'admin' ? 'Administrador' : 'Usuario'}
+                  </Typography>
+                </>
+              ) : (
+                <Alert severity="warning" sx={{ mt: 2 }}>
+                  No hay información de usuario disponible.
+                </Alert>
+              )}
+            </CardContent>
+            <CardActions>
+              <Button 
+                startIcon={<EditIcon />}
+                variant="contained" 
+                color="primary" 
+                onClick={() => navigate('/configuraciones')}
+              >
+                Configuración
               </Button>
             </CardActions>
           </Card>
         </Grid>
         
         {/* Recent Certificates Card */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12}>
           <Card>
             <CardContent>
               <Box display="flex" alignItems="center" mb={2}>
                 <DescriptionIcon color="primary" fontSize="large" sx={{ mr: 2 }} />
                 <Typography variant="h5" component="div">
-                  Recent Certificates
+                  Certificados Recientes
                 </Typography>
               </Box>
               
@@ -148,9 +235,9 @@ const Dashboard = () => {
                       <Button 
                         size="small" 
                         variant="outlined"
-                        onClick={() => navigate(`/certificates/edit/${certificate.id}`)}
+                        onClick={() => navigate(`/certificados/${certificate.id}`)}
                       >
-                        View
+                        Ver
                       </Button>
                     </Box>
                     {index < certificates.slice(0, 3).length - 1 && <Divider />}
@@ -158,7 +245,7 @@ const Dashboard = () => {
                 ))
               ) : (
                 <Alert severity="info" sx={{ mt: 2 }}>
-                  No certificates have been created yet.
+                  No se han creado certificados todavía.
                 </Alert>
               )}
             </CardContent>
@@ -167,15 +254,15 @@ const Dashboard = () => {
                 startIcon={<AddIcon />}
                 variant="contained" 
                 color="primary" 
-                onClick={() => navigate('/certificates/new')}
+                onClick={() => navigate('/certificados/nuevo')}
               >
-                Create Certificate
+                Crear Certificado
               </Button>
               <Button 
                 variant="outlined" 
-                onClick={() => navigate('/certificates')}
+                onClick={() => navigate('/certificados')}
               >
-                View All
+                Ver Todos
               </Button>
             </CardActions>
           </Card>
@@ -185,27 +272,37 @@ const Dashboard = () => {
         <Grid item xs={12}>
           <Paper sx={{ p: 3 }}>
             <Typography variant="h6" component="h2" gutterBottom>
-              Quick Actions
+              Acciones Rápidas
             </Typography>
             <Box display="flex" gap={2} flexWrap="wrap">
+              {materialType === 'aguja' ? (
+                <Button 
+                  variant="contained" 
+                  startIcon={<AddIcon />}
+                  onClick={() => navigate('/agujas/nuevo-certificado')}
+                >
+                  Nuevo Certificado de Agujas
+                </Button>
+              ) : (
+                <Button 
+                  variant="contained" 
+                  startIcon={<AddIcon />}
+                  onClick={() => navigate('/certificados/nuevo')}
+                >
+                  Nuevo Certificado
+                </Button>
+              )}
               <Button 
-                variant="contained" 
-                startIcon={<AddIcon />}
-                onClick={() => navigate('/certificates/new')}
+                variant="outlined" 
+                onClick={() => navigate('/certificados')}
               >
-                New Certificate
+                Gestionar Certificados
               </Button>
               <Button 
                 variant="outlined" 
-                onClick={() => navigate('/certificates')}
+                onClick={() => navigate('/perfil-empresa')}
               >
-                Manage Certificates
-              </Button>
-              <Button 
-                variant="outlined" 
-                onClick={() => navigate('/company-profile')}
-              >
-                Edit Company Profile
+                Ver Perfil de Empresa
               </Button>
             </Box>
           </Paper>
