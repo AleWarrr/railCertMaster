@@ -43,7 +43,6 @@ const Login = () => {
     try {
       setLoading(true);
       const result = await window.api.login({ username, password });
-      
       if (result.success) {
         // Recargar la página para que App.js detecte la autenticación
         window.location.href = '/';

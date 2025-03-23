@@ -48,18 +48,104 @@ export const fetchApi = async (endpoint, options = {}) => {
  * @returns {Promise<Object>} - Login response with token and user data
  */
 export const login = async (username, password) => {
-  const response = await fetchApi('/auth/login', {
-    method: 'POST',
-    body: JSON.stringify({ username, password })
-  });
-  
-  // Si el login fue exitoso, guardar el token
-  if (response.success && response.token) {
-    localStorage.setItem('authToken', response.token);
-    localStorage.setItem('userData', JSON.stringify(response.user));
+  try {
+    // Para desarrollo: simulación de login cuando el endpoint no está disponible
+    if (username === 'admin' && password === 'admin') {
+      const userData = {
+        id: 'admin',
+        username: 'admin',
+        name: 'Administrador',
+        email: 'admin@railcertmaster.com',
+        role: 'admin',
+        company: {
+          companyName: 'RailCert SL',
+          contactName: 'Juan Pérez',
+          email: 'contacto@railcert.com',
+          phone: '912345678',
+          address: 'Calle Ferroviaria, 1',
+          city: 'Madrid',
+          state: 'Madrid',
+          zipCode: '28001',
+          country: 'España',
+          registrationNumber: 'REG987654',
+          taxId: 'B87654321'
+        }
+      };
+      
+      localStorage.setItem('authToken', 'admin-token');
+      localStorage.setItem('userData', JSON.stringify(userData));
+      localStorage.setItem('companyProfile', JSON.stringify(userData.company));
+      
+      return { 
+        success: true, 
+        token: 'admin-token', 
+        user: userData 
+      };
+    } else if (username === 'demo' && password === 'demo') {
+      const userData = {
+        id: 'demo',
+        username: 'demo',
+        name: 'Usuario Demo',
+        email: 'demo@ejemplo.com',
+        role: 'user',
+        company: {
+          companyName: 'Empresa Demo',
+          contactName: 'Contacto Demo',
+          email: 'contacto@empresademo.com',
+          phone: '123456789',
+          address: 'Calle Demo, 123',
+          city: 'Ciudad Demo',
+          state: 'Provincia Demo',
+          zipCode: '12345',
+          country: 'España',
+          registrationNumber: 'REG12345',
+          taxId: 'B12345678'
+        }
+      };
+      
+      localStorage.setItem('authToken', 'demo-token');
+      localStorage.setItem('userData', JSON.stringify(userData));
+      localStorage.setItem('companyProfile', JSON.stringify(userData.company));
+      
+      return {
+        success: true,
+        token: 'demo-token',
+        user: userData
+      };
+    }
+    
+    // Si no es un usuario de desarrollo, intentar con el backend real
+    // Comentado temporalmente hasta que el endpoint esté disponible
+    /*
+    const response = await fetchApi('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ username, password })
+    });
+    
+    // Si el login fue exitoso, guardar el token
+    if (response.success && response.token) {
+      localStorage.setItem('authToken', response.token);
+      localStorage.setItem('userData', JSON.stringify(response.user));
+      if (response.user && response.user.company) {
+        localStorage.setItem('companyProfile', JSON.stringify(response.user.company));
+      }
+    }
+    
+    return response;
+    */
+    
+    // Si no es usuario de prueba y no hay backend, devolver error
+    return { 
+      success: false, 
+      error: 'Usuario o contraseña incorrectos. Por favor, verifica tus credenciales.' 
+    };
+  } catch (error) {
+    console.error('Error en login:', error);
+    return { 
+      success: false, 
+      error: 'Error al conectar con el servidor. Por favor, inténtalo más tarde.' 
+    };
   }
-  
-  return response;
 };
 
 /**
