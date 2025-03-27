@@ -110,7 +110,9 @@ const CertificateForm = ({ initialMaterialType }) => {
       mechanicalProperties: [],
       comments: '',
       attachments: [],
-      selectedNeedles: []
+      selectedNeedles: [],
+      hardnessTestPdfs: [],
+      particleTestPdfs: []
     }
   });
 
@@ -133,6 +135,13 @@ const CertificateForm = ({ initialMaterialType }) => {
   // Para gestionar agujas seleccionadas
   const { fields: needleFields, append: appendNeedle, remove: removeNeedle } = 
     useFieldArray({ control, name: 'selectedNeedles' });
+
+  // Field arrays para los PDFs múltiples
+  const { fields: hardnessTestPdfsFields, append: appendHardnessTestPdf, remove: removeHardnessTestPdf } = 
+    useFieldArray({ control, name: 'hardnessTestPdfs' });
+  
+  const { fields: particleTestPdfsFields, append: appendParticleTestPdf, remove: removeParticleTestPdf } = 
+    useFieldArray({ control, name: 'particleTestPdfs' });
 
   // Añadir estados para clientes e inspectores
   const [customers, setCustomers] = useState([]);
@@ -181,8 +190,8 @@ const CertificateForm = ({ initialMaterialType }) => {
         
         // Inicializar campos de archivos adjuntos específicos para agujas
         setValue('attachments.templatePdf', null);
-        setValue('attachments.hardnessTestPdf', null);
-        setValue('attachments.particleTestPdf', null);
+        setValue('hardnessTestPdfs', []); // Inicializar como array vacío
+        setValue('particleTestPdfs', []); // Inicializar como array vacío
       }
     }
   }, [initialMaterialType, setValue, isEditMode]);
@@ -302,8 +311,8 @@ const CertificateForm = ({ initialMaterialType }) => {
       
       // Limpiar archivos adjuntos específicos
       setValue('attachments.templatePdf', null);
-      setValue('attachments.hardnessTestPdf', null);
-      setValue('attachments.particleTestPdf', null);
+      setValue('hardnessTestPdfs', []); // Limpiar los PDFs de dureza
+      setValue('particleTestPdfs', []); // Limpiar los PDFs de partículas
       
       // Generar número de certificado automáticamente para agujas
       if (watchMaterialType === 'aguja' && !isEditMode) {
@@ -386,12 +395,25 @@ const CertificateForm = ({ initialMaterialType }) => {
   const handleSaveCertificate = async (data) => {
     try {
       setSaving(true);
+      console.log('Datos a guardar:', data);
+      
+      // Preparar datos para enviar al servidor
+      const formData = {
+        ...data,
+        // Construir el objeto con los múltiples PDFs
+        attachments: {
+          ...(data.attachments || {}),
+          templatePdf: data.attachments?.templatePdf || null,
+          hardnessTestPdfs: data.hardnessTestPdfs || [],
+          particleTestPdfs: data.particleTestPdfs || []
+        }
+      };
       
       // Make sure company data is included
-      data.companyInfo = companyProfile;
+      formData.companyInfo = companyProfile;
       
       // Save certificate
-      const result = await window.api.saveCertificate(data);
+      const result = await window.api.saveCertificate(formData);
       
       if (result.success) {
         setSnackbar({
@@ -583,8 +605,8 @@ const CertificateForm = ({ initialMaterialType }) => {
   };
 
   // Función para renderizar sección de archivos adjuntos específicos según tipo de material
-  const renderAttachmentFields = (materialType) => {
-    switch (materialType) {
+  const renderAttachmentFields = (type) => {
+    switch (type) {
       case 'aguja':
         return (
           <>
@@ -643,103 +665,145 @@ const CertificateForm = ({ initialMaterialType }) => {
               </Grid>
               
               <Grid item xs={12} md={4}>
-                <Controller
-                  name="attachments.hardnessTestPdf"
-                  control={control}
-                  render={({ field }) => (
-                    <Box sx={{ border: '1px dashed grey', p: 2, borderRadius: 1, textAlign: 'center' }}>
-                      <Typography variant="subtitle2" gutterBottom>PDF Ensayo Dureza</Typography>
-                      {field.value ? (
-                        <Box display="flex" flexDirection="column" alignItems="center">
-                          <FileCopyIcon color="primary" sx={{ fontSize: 40, mb: 1 }} />
-                          <Typography variant="body2" noWrap>{field.value.name}</Typography>
-                          <Button 
-                            size="small" 
-                            color="error" 
-                            onClick={() => setValue('attachments.hardnessTestPdf', null)}
-                          >
-                            Eliminar
-                          </Button>
-                        </Box>
-                      ) : (
-                        <Button
-                          variant="outlined"
-                          startIcon={<FileUploadIcon />}
-                          onClick={async () => {
-                            try {
-                              const result = await window.api.openFileDialog({ 
-                                filters: [{ name: 'PDF', extensions: ['pdf'] }]
-                              });
-                              if (result.success && !result.canceled) {
-                                setValue('attachments.hardnessTestPdf', {
-                                  id: uuidv4(),
-                                  name: result.fileName,
-                                  path: result.filePath,
-                                  fileData: result.fileBuffer,
-                                  type: 'hardnessTestPdf'
-                                });
-                              }
-                            } catch (error) {
-                              console.error('Error al subir PDF:', error);
-                            }
+                <Box sx={{ border: '1px dashed grey', p: 2, borderRadius: 1 }}>
+                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                    <Typography variant="subtitle2">PDFs Ensayo Dureza</Typography>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<AddIcon />}
+                      onClick={async () => {
+                        try {
+                          const result = await window.api.openFileDialog({ 
+                            filters: [{ name: 'PDF', extensions: ['pdf'] }]
+                          });
+                          if (result.success && !result.canceled) {
+                            appendHardnessTestPdf({
+                              id: uuidv4(),
+                              name: result.fileName,
+                              path: result.filePath,
+                              fileData: result.fileBuffer,
+                              type: 'hardnessTestPdf'
+                            });
+                          }
+                        } catch (error) {
+                          console.error('Error al subir PDF:', error);
+                        }
+                      }}
+                    >
+                      Añadir PDF
+                    </Button>
+                  </Box>
+                  
+                  {hardnessTestPdfsFields.length === 0 ? (
+                    <Typography variant="body2" color="text.secondary" textAlign="center" my={2}>
+                      No hay PDFs de ensayos de dureza añadidos
+                    </Typography>
+                  ) : (
+                    <Box sx={{ maxHeight: '200px', overflowY: 'auto' }}>
+                      {hardnessTestPdfsFields.map((pdf, index) => (
+                        <Box 
+                          key={pdf.id} 
+                          display="flex" 
+                          alignItems="center" 
+                          justifyContent="space-between"
+                          sx={{ 
+                            p: 1, 
+                            mb: 1, 
+                            border: '1px solid #eee', 
+                            borderRadius: 1,
+                            backgroundColor: 'background.paper' 
                           }}
                         >
-                          Subir PDF
-                        </Button>
-                      )}
+                          <Box display="flex" alignItems="center">
+                            <FileCopyIcon color="primary" sx={{ mr: 1 }} />
+                            <Typography variant="body2" noWrap sx={{ maxWidth: '150px' }}>
+                              {pdf.name}
+                            </Typography>
+                          </Box>
+                          <IconButton 
+                            size="small" 
+                            color="error" 
+                            onClick={() => removeHardnessTestPdf(index)}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+                      ))}
                     </Box>
                   )}
-                />
+                </Box>
               </Grid>
               
               <Grid item xs={12} md={4}>
-                <Controller
-                  name="attachments.particleTestPdf"
-                  control={control}
-                  render={({ field }) => (
-                    <Box sx={{ border: '1px dashed grey', p: 2, borderRadius: 1, textAlign: 'center' }}>
-                      <Typography variant="subtitle2" gutterBottom>PDF Ensayo Partículas</Typography>
-                      {field.value ? (
-                        <Box display="flex" flexDirection="column" alignItems="center">
-                          <FileCopyIcon color="primary" sx={{ fontSize: 40, mb: 1 }} />
-                          <Typography variant="body2" noWrap>{field.value.name}</Typography>
-                          <Button 
-                            size="small" 
-                            color="error" 
-                            onClick={() => setValue('attachments.particleTestPdf', null)}
-                          >
-                            Eliminar
-                          </Button>
-                        </Box>
-                      ) : (
-                        <Button
-                          variant="outlined"
-                          startIcon={<FileUploadIcon />}
-                          onClick={async () => {
-                            try {
-                              const result = await window.api.openFileDialog({ 
-                                filters: [{ name: 'PDF', extensions: ['pdf'] }]
-                              });
-                              if (result.success && !result.canceled) {
-                                setValue('attachments.particleTestPdf', {
-                                  id: uuidv4(),
-                                  name: result.fileName,
-                                  path: result.filePath,
-                                  fileData: result.fileBuffer,
-                                  type: 'particleTestPdf'
-                                });
-                              }
-                            } catch (error) {
-                              console.error('Error al subir PDF:', error);
-                            }
+                <Box sx={{ border: '1px dashed grey', p: 2, borderRadius: 1 }}>
+                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                    <Typography variant="subtitle2">PDFs Ensayo Partículas</Typography>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<AddIcon />}
+                      onClick={async () => {
+                        try {
+                          const result = await window.api.openFileDialog({ 
+                            filters: [{ name: 'PDF', extensions: ['pdf'] }]
+                          });
+                          if (result.success && !result.canceled) {
+                            appendParticleTestPdf({
+                              id: uuidv4(),
+                              name: result.fileName,
+                              path: result.filePath,
+                              fileData: result.fileBuffer,
+                              type: 'particleTestPdf'
+                            });
+                          }
+                        } catch (error) {
+                          console.error('Error al subir PDF:', error);
+                        }
+                      }}
+                    >
+                      Añadir PDF
+                    </Button>
+                  </Box>
+                  
+                  {particleTestPdfsFields.length === 0 ? (
+                    <Typography variant="body2" color="text.secondary" textAlign="center" my={2}>
+                      No hay PDFs de ensayos de partículas añadidos
+                    </Typography>
+                  ) : (
+                    <Box sx={{ maxHeight: '200px', overflowY: 'auto' }}>
+                      {particleTestPdfsFields.map((pdf, index) => (
+                        <Box 
+                          key={pdf.id} 
+                          display="flex" 
+                          alignItems="center" 
+                          justifyContent="space-between"
+                          sx={{ 
+                            p: 1, 
+                            mb: 1, 
+                            border: '1px solid #eee', 
+                            borderRadius: 1,
+                            backgroundColor: 'background.paper' 
                           }}
                         >
-                          Subir PDF
-                        </Button>
-                      )}
+                          <Box display="flex" alignItems="center">
+                            <FileCopyIcon color="primary" sx={{ mr: 1 }} />
+                            <Typography variant="body2" noWrap sx={{ maxWidth: '150px' }}>
+                              {pdf.name}
+                            </Typography>
+                          </Box>
+                          <IconButton 
+                            size="small" 
+                            color="error" 
+                            onClick={() => removeParticleTestPdf(index)}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+                      ))}
                     </Box>
                   )}
-                />
+                </Box>
               </Grid>
             </Grid>
           </>

@@ -264,6 +264,25 @@ const NeedlesForm = ({ control, errors, watch, setValue, getMaterialTemplate, on
     }
   }, [setValue, watch]);
   
+  // Obtener todas las agujas seleccionadas actualmente
+  const getSelectedNeedleIds = () => {
+    const needlesArray = watch('needles') || [];
+    // Crear un array con los IDs de agujas ya seleccionadas (excepto cadenas vacías o undefined)
+    return needlesArray
+      .map(n => n.serial_number)
+      .filter(id => id !== undefined && id !== '');
+  };
+  
+  // Verificar si una aguja ya está seleccionada en otro campo distinto al actual
+  const isNeedleSelectedElsewhere = (needleId, currentFieldIndex) => {
+    const needles = watch('needles') || [];
+    return needles.some((needle, index) => 
+      index !== currentFieldIndex && 
+      needle.serial_number && 
+      String(needle.serial_number) === String(needleId)
+    );
+  };
+  
   // Show a loading state while fetching data
   if (isLoading) {
     return (
@@ -375,14 +394,9 @@ const NeedlesForm = ({ control, errors, watch, setValue, getMaterialTemplate, on
                             label="Número de Aguja"
                           >
                             <MenuItem value="">Seleccione una aguja</MenuItem>
-                            {/* Filtramos el inventario para mostrar solo las agujas del fabricante actual */}
+                            {/* Filtramos el inventario para mostrar solo las agujas del fabricante actual
+                                y que no estén ya seleccionadas en otro campo */}
                             {(Array.isArray(needleInventory) ? needleInventory : [])
-                              .map(needle => {
-                                console.log('Evaluando aguja:', needle);
-                                console.log('Usuario actual:', currentUser);
-                                console.log('Comparando:', needle.company_id, ' con ', currentUser?.fabricante_id);
-                                return needle;
-                              })
                               .filter(needle => {
                                 // No filtramos si no hay usuario o fabricante_id
                                 if (!currentUser || !currentUser.fabricante_id) {
@@ -391,9 +405,11 @@ const NeedlesForm = ({ control, errors, watch, setValue, getMaterialTemplate, on
                                 // Convertir ambos a números para comparar correctamente
                                 const needleCompanyId = Number(needle.company_id);
                                 const userCompanyId = Number(currentUser.fabricante_id);
-                                console.log(`Comparando IDs: aguja=${needleCompanyId}, usuario=${userCompanyId}, coincide=${needleCompanyId === userCompanyId}`);
-                                
                                 return needleCompanyId === userCompanyId;
+                              })
+                              .filter(needle => {
+                                // No mostrar las agujas que ya están seleccionadas en otros campos
+                                return !isNeedleSelectedElsewhere(needle.id, index);
                               })
                               .map(needle => (
                                 <MenuItem key={needle.id} value={needle.id}>
