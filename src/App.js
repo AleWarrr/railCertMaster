@@ -11,6 +11,7 @@ import SettingsPage from './components/SettingsPage';
 import NeedlesForm from './components/NeedlesForm';
 import Login from './components/Login';
 import apiAdapter from './utils/apiAdapter';
+import { initializeMaterials } from './utils/initMaterials';
 
 // Componente para proteger rutas
 const ProtectedRoute = ({ children }) => {
@@ -35,6 +36,9 @@ const App = () => {
       try {
         // Attach API adapter to window object for global access
         window.api = apiAdapter;
+        
+        // Inicializar los registros de materiales
+        initializeMaterials();
         
         // Load company profile from API if authenticated
         if (apiAdapter.isAuthenticated()) {

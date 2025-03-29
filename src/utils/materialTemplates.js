@@ -4,8 +4,11 @@
  * expected test results, chemical compositions, and mechanical properties
  */
 
-// Material types available in the system
-export const MATERIAL_TYPES = [
+// Material types available in the system (simple strings para compatibilidad con el registro)
+export const MATERIAL_TYPES = ['aguja', 'rail', 'sleeper', 'fastening', 'ballast', 'weld', 'insulation', 'joint', 'tie'];
+
+// Original material types (mantenidos para referencia)
+export const MATERIAL_TYPES_FULL = [
   { value: 'aguja', label: 'Agujas' },
   { value: 'rail', label: 'Rieles' },
   { value: 'sleeper', label: 'Traviesas' },
@@ -16,6 +19,12 @@ export const MATERIAL_TYPES = [
   { value: 'joint', label: 'Juntas de Rieles' },
   { value: 'tie', label: 'Durmientes de Madera' }
 ];
+
+// Obtener la etiqueta para un tipo de material
+export const getMaterialLabel = (materialType) => {
+  const material = MATERIAL_TYPES_FULL.find(m => m.value === materialType);
+  return material ? material.label : materialType;
+};
 
 // Template for Needles
 const needlesTemplate = {
