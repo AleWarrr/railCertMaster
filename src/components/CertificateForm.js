@@ -381,18 +381,24 @@ const CertificateForm = ({ initialMaterialType }) => {
     if (needles.length > 0) {
       // Añadir propiedades hardnessTestPdfId y particleTestPdfId a las agujas
       const updatedNeedles = needles.map(needle => {
-        if (!needle.hasOwnProperty('hardnessTestPdfId')) {
-          needle.hardnessTestPdfId = '';
+        // Crear una copia para evitar mutaciones
+        const newNeedle = { ...needle };
+        
+        if (!newNeedle.hasOwnProperty('hardnessTestPdfId')) {
+          newNeedle.hardnessTestPdfId = '';
         }
-        if (!needle.hasOwnProperty('particleTestPdfId')) {
-          needle.particleTestPdfId = '';
+        if (!newNeedle.hasOwnProperty('particleTestPdfId')) {
+          newNeedle.particleTestPdfId = '';
         }
-        return needle;
+        return newNeedle;
       });
       
-      // Actualizar selectedNeedles con las agujas modificadas
-      setValue('selectedNeedles', updatedNeedles);
-      console.log('Agujas actualizadas desde needles:', updatedNeedles);
+      // Verificar si hay cambios reales antes de actualizar
+      if (JSON.stringify(updatedNeedles) !== JSON.stringify(selectedNeedles)) {
+        // Actualizar selectedNeedles con las agujas modificadas
+        setValue('selectedNeedles', updatedNeedles);
+        console.log('Agujas actualizadas desde needles:', updatedNeedles);
+      }
     } 
     // Si no hay needles pero hay selectedNeedles, sincronizar en dirección opuesta
     else if (selectedNeedles.length > 0 && needles.length === 0) {
@@ -400,6 +406,36 @@ const CertificateForm = ({ initialMaterialType }) => {
       console.log('Agujas actualizadas desde selectedNeedles:', selectedNeedles);
     }
   }, [watch('needles')]);
+
+  // Detectar cuando se selecciona una aguja en el dropdown y actualizar inmediatamente
+  const handleNeedleSelection = (fieldIndex, needleId) => {
+    console.log(`Aguja seleccionada en campo ${fieldIndex}: ${needleId}`);
+    
+    // Obtener arrays actuales
+    const needles = watch('needles') || [];
+    const selectedNeedles = watch('selectedNeedles') || [];
+    
+    // Actualizar el array de needles
+    const updatedNeedles = [...needles];
+    if (updatedNeedles[fieldIndex]) {
+      updatedNeedles[fieldIndex] = {
+        ...updatedNeedles[fieldIndex],
+        serial_number: needleId, // Si needleId es vacío, esto deseleccionará la aguja
+        hardnessTestPdfId: updatedNeedles[fieldIndex].hardnessTestPdfId || '',
+        particleTestPdfId: updatedNeedles[fieldIndex].particleTestPdfId || ''
+      };
+    }
+    
+    // Actualizar ambos arrays para mantener sincronización
+    setValue('needles', updatedNeedles);
+    setValue('selectedNeedles', updatedNeedles);
+    
+    // Forzar un re-renderizado para actualizar la UI inmediatamente
+    setTimeout(() => {
+      const freshNeedles = [...updatedNeedles];
+      setValue('needles', freshNeedles);
+    }, 10);
+  };
 
   // Actualizar la interfaz cuando se añadan PDFs
   useEffect(() => {
@@ -817,6 +853,192 @@ const CertificateForm = ({ initialMaterialType }) => {
       );
     }
 
+    // Obtener PDFs de dureza y partículas
+    const hardnessTestPdfs = hardnessTestPdfsFields || [];
+    const particleTestPdfs = particleTestPdfsFields || [];
+
+    // Asignación automática si solo hay un PDF de cada tipo
+    // Si hay solo un PDF de dureza, asignar automáticamente todas las agujas a ese PDF
+    if (hardnessTestPdfs.length === 1) {
+      const pdfId = hardnessTestPdfs[0].id;
+      const updatedNeedles = needles.map(needle => {
+        if (needle.serial_number && !needle.hardnessTestPdfId) {
+          return { ...needle, hardnessTestPdfId: pdfId };
+        }
+        return needle;
+      });
+      
+      // Si hay cambios, actualizar los needles
+      if (JSON.stringify(updatedNeedles) !== JSON.stringify(needles)) {
+        setValue('needles', updatedNeedles);
+        setValue('selectedNeedles', updatedNeedles);
+      }
+    }
+    
+    // Si hay solo un PDF de partículas, asignar automáticamente todas las agujas a ese PDF
+    if (particleTestPdfs.length === 1) {
+      const pdfId = particleTestPdfs[0].id;
+      const updatedNeedles = needles.map(needle => {
+        if (needle.serial_number && !needle.particleTestPdfId) {
+          return { ...needle, particleTestPdfId: pdfId };
+        }
+        return needle;
+      });
+      
+      // Si hay cambios, actualizar los needles
+      if (JSON.stringify(updatedNeedles) !== JSON.stringify(needles)) {
+        setValue('needles', updatedNeedles);
+        setValue('selectedNeedles', updatedNeedles);
+      }
+    }
+
+    // Crear secciones independientes para cada tipo de PDF
+    // UI para los PDFs de dureza
+    const renderHardnessSection = () => {
+      // Si solo hay un PDF de dureza, mostrar UI simplificada para este tipo
+      if (hardnessTestPdfs.length === 1) {
+        return (
+          <Paper sx={{ mb: 2, p: 2, bgcolor: 'background.paper' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+              <FileCopyIcon color="primary" sx={{ mr: 1 }} />
+              <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
+                {hardnessTestPdfs[0].name}
+              </Typography>
+            </Box>
+            <Alert severity="success" sx={{ mt: 1 }}>
+              Este PDF se asignará automáticamente a todas las agujas seleccionadas.
+            </Alert>
+          </Paper>
+        );
+      }
+      
+      // Si hay múltiples PDFs de dureza, mostrar UI con selectores
+      if (hardnessTestPdfs.length > 1) {
+        return (
+          <Box>
+            {hardnessTestPdfs.map((pdf, index) => (
+              <Paper key={pdf.id} sx={{ mb: 2, p: 2, bgcolor: 'background.paper' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <FileCopyIcon color="primary" sx={{ mr: 1 }} />
+                  <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
+                    {pdf.name}
+                  </Typography>
+                </Box>
+                {renderNeedleSelector(pdf.id, 'hardness')}
+                
+                {/* Resumen de agujas asignadas */}
+                <Box sx={{ mt: 1 }}>
+                  <Typography variant="caption" color="text.secondary">
+                    {needles.filter(n => n.serial_number && n.hardnessTestPdfId === pdf.id).length} agujas asignadas
+                  </Typography>
+                </Box>
+              </Paper>
+            ))}
+            
+            {/* Botón para asignar todas las agujas al primer PDF */}
+            {hasSelectedNeedles && (
+              <Button 
+                variant="outlined" 
+                size="small" 
+                onClick={() => {
+                  const pdfId = hardnessTestPdfs[0].id;
+                  const updatedNeedles = needles.map(needle => ({
+                    ...needle,
+                    hardnessTestPdfId: needle.serial_number ? pdfId : ''
+                  }));
+                  setValue('needles', updatedNeedles);
+                  setValue('selectedNeedles', updatedNeedles);
+                }}
+                sx={{ mt: 1 }}
+              >
+                Asignar todas las agujas al primer PDF
+              </Button>
+            )}
+          </Box>
+        );
+      }
+      
+      // Si no hay PDFs de dureza
+      return (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          No hay PDFs de ensayo de dureza añadidos. Súbelos primero para asignarlos a las agujas.
+        </Alert>
+      );
+    };
+    
+    // UI para los PDFs de partículas
+    const renderParticleSection = () => {
+      // Si solo hay un PDF de partículas, mostrar UI simplificada para este tipo
+      if (particleTestPdfs.length === 1) {
+        return (
+          <Paper sx={{ mb: 2, p: 2, bgcolor: 'background.paper' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+              <FileCopyIcon color="primary" sx={{ mr: 1 }} />
+              <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
+                {particleTestPdfs[0].name}
+              </Typography>
+            </Box>
+            <Alert severity="success" sx={{ mt: 1 }}>
+              Este PDF se asignará automáticamente a todas las agujas seleccionadas.
+            </Alert>
+          </Paper>
+        );
+      }
+      
+      // Si hay múltiples PDFs de partículas, mostrar UI con selectores
+      if (particleTestPdfs.length > 1) {
+        return (
+          <Box>
+            {particleTestPdfs.map((pdf, index) => (
+              <Paper key={pdf.id} sx={{ mb: 2, p: 2, bgcolor: 'background.paper' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <FileCopyIcon color="primary" sx={{ mr: 1 }} />
+                  <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
+                    {pdf.name}
+                  </Typography>
+                </Box>
+                {renderNeedleSelector(pdf.id, 'particle')}
+                
+                {/* Resumen de agujas asignadas */}
+                <Box sx={{ mt: 1 }}>
+                  <Typography variant="caption" color="text.secondary">
+                    {needles.filter(n => n.serial_number && n.particleTestPdfId === pdf.id).length} agujas asignadas
+                  </Typography>
+                </Box>
+              </Paper>
+            ))}
+            
+            {/* Botón para asignar todas las agujas al primer PDF */}
+            {hasSelectedNeedles && (
+              <Button 
+                variant="outlined" 
+                size="small" 
+                onClick={() => {
+                  const pdfId = particleTestPdfs[0].id;
+                  const updatedNeedles = needles.map(needle => ({
+                    ...needle,
+                    particleTestPdfId: needle.serial_number ? pdfId : ''
+                  }));
+                  setValue('needles', updatedNeedles);
+                  setValue('selectedNeedles', updatedNeedles);
+                }}
+                sx={{ mt: 1 }}
+              >
+                Asignar todas las agujas al primer PDF
+              </Button>
+            )}
+          </Box>
+        );
+      }
+      
+      // Si no hay PDFs de partículas
+      return (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          No hay PDFs de ensayo de partículas añadidos. Súbelos primero para asignarlos a las agujas.
+        </Alert>
+      );
+    };
+
     // Función para renderizar el selector múltiple de agujas para un PDF
     const renderNeedleSelector = (pdfId, pdfType) => {
       // Obtenemos todas las agujas que tienen este PDF asignado
@@ -927,53 +1149,7 @@ const CertificateForm = ({ initialMaterialType }) => {
             <Typography variant="subtitle1" gutterBottom>
               PDFs de Ensayo Dureza
             </Typography>
-            
-            {hardnessTestPdfsFields.length === 0 ? (
-              <Alert severity="info" sx={{ mb: 2 }}>
-                No hay PDFs de ensayo de dureza añadidos. Súbelos primero para asignarlos a las agujas.
-              </Alert>
-            ) : (
-              <Box>
-                {hardnessTestPdfsFields.map((pdf, index) => (
-                  <Paper key={pdf.id} sx={{ mb: 2, p: 2, bgcolor: 'background.paper' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                      <FileCopyIcon color="primary" sx={{ mr: 1 }} />
-                      <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
-                        {pdf.name}
-                      </Typography>
-                    </Box>
-                    {renderNeedleSelector(pdf.id, 'hardness')}
-                    
-                    {/* Resumen de agujas asignadas */}
-                    <Box sx={{ mt: 1 }}>
-                      <Typography variant="caption" color="text.secondary">
-                        {needles.filter(n => n.serial_number && n.hardnessTestPdfId === pdf.id).length} agujas asignadas
-                      </Typography>
-                    </Box>
-                  </Paper>
-                ))}
-                
-                {/* Botón para asignar todas las agujas a un PDF */}
-                {hardnessTestPdfsFields.length === 1 && hasSelectedNeedles && (
-                  <Button 
-                    variant="outlined" 
-                    size="small" 
-                    onClick={() => {
-                      const pdfId = hardnessTestPdfsFields[0].id;
-                      const updatedNeedles = needles.map(needle => ({
-                        ...needle,
-                        hardnessTestPdfId: needle.serial_number ? pdfId : ''
-                      }));
-                      setValue('needles', updatedNeedles);
-                      setValue('selectedNeedles', updatedNeedles);
-                    }}
-                    sx={{ mt: 1 }}
-                  >
-                    Asignar todas las agujas a este PDF
-                  </Button>
-                )}
-              </Box>
-            )}
+            {renderHardnessSection()}
           </Grid>
           
           {/* PDFs de Ensayo Partículas */}
@@ -981,53 +1157,7 @@ const CertificateForm = ({ initialMaterialType }) => {
             <Typography variant="subtitle1" gutterBottom>
               PDFs de Ensayo Partículas
             </Typography>
-            
-            {particleTestPdfsFields.length === 0 ? (
-              <Alert severity="info" sx={{ mb: 2 }}>
-                No hay PDFs de ensayo de partículas añadidos. Súbelos primero para asignarlos a las agujas.
-              </Alert>
-            ) : (
-              <Box>
-                {particleTestPdfsFields.map((pdf, index) => (
-                  <Paper key={pdf.id} sx={{ mb: 2, p: 2, bgcolor: 'background.paper' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                      <FileCopyIcon color="primary" sx={{ mr: 1 }} />
-                      <Typography variant="body1" sx={{ fontWeight: 'medium' }}>
-                        {pdf.name}
-                      </Typography>
-                    </Box>
-                    {renderNeedleSelector(pdf.id, 'particle')}
-                    
-                    {/* Resumen de agujas asignadas */}
-                    <Box sx={{ mt: 1 }}>
-                      <Typography variant="caption" color="text.secondary">
-                        {needles.filter(n => n.serial_number && n.particleTestPdfId === pdf.id).length} agujas asignadas
-                      </Typography>
-                    </Box>
-                  </Paper>
-                ))}
-                
-                {/* Botón para asignar todas las agujas a un PDF */}
-                {particleTestPdfsFields.length === 1 && hasSelectedNeedles && (
-                  <Button 
-                    variant="outlined" 
-                    size="small" 
-                    onClick={() => {
-                      const pdfId = particleTestPdfsFields[0].id;
-                      const updatedNeedles = needles.map(needle => ({
-                        ...needle,
-                        particleTestPdfId: needle.serial_number ? pdfId : ''
-                      }));
-                      setValue('needles', updatedNeedles);
-                      setValue('selectedNeedles', updatedNeedles);
-                    }}
-                    sx={{ mt: 1 }}
-                  >
-                    Asignar todas las agujas a este PDF
-                  </Button>
-                )}
-              </Box>
-            )}
+            {renderParticleSection()}
           </Grid>
         </Grid>
       </Box>
@@ -1038,6 +1168,11 @@ const CertificateForm = ({ initialMaterialType }) => {
   const renderMaterialSpecificFields = (materialType) => {
     switch (materialType) {
       case 'aguja':
+        // Obtener las agujas seleccionadas actualmente
+        const needles = watch('needles') || [];
+        // Verificar si hay al menos una aguja con serial_number (seleccionada)
+        const hasSelectedNeedles = needles.some(needle => needle.serial_number);
+        
         return (
           <Grid item xs={12}>
             <NeedlesForm 
@@ -1048,10 +1183,11 @@ const CertificateForm = ({ initialMaterialType }) => {
               getMaterialTemplate={getMaterialTemplate}
               onNext={handleNext}
               hideComments={true}
+              onNeedleSelect={handleNeedleSelection} // Pasar la función para manejar selección de agujas
             />
             
-            {/* Mostrar la matriz de asignación siempre que haya PDFs subidos */}
-            {(hardnessTestPdfsFields.length > 0 || particleTestPdfsFields.length > 0) ? (
+            {/* Mostrar la matriz de asignación cuando haya agujas realmente seleccionadas (con serial_number) */}
+            {hasSelectedNeedles && (
               <>
                 <Typography variant="h6" gutterBottom sx={{ mt: 4, mb: 2 }}>
                   Asignación de PDFs a Agujas
@@ -1059,7 +1195,7 @@ const CertificateForm = ({ initialMaterialType }) => {
                 <Divider sx={{ mb: 2 }} />
                 {renderPdfAssignmentMatrix()}
               </>
-            ) : null}
+            )}
           </Grid>
         );
         

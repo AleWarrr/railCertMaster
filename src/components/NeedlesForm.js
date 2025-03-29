@@ -37,7 +37,7 @@ import {
  * NeedlesForm - Specialized component for handling needle material certifications
  * Manages needle-specific form fields, including needle weld types and customer information
  */
-const NeedlesForm = ({ control, errors, watch, setValue, getMaterialTemplate, onNext, hideComments = false }) => {
+const NeedlesForm = ({ control, errors, watch, setValue, getMaterialTemplate, onNext, hideComments = false, onNeedleSelect }) => {
   const [companies, setCompanies] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [inspectors, setInspectors] = useState([]);
@@ -392,6 +392,16 @@ const NeedlesForm = ({ control, errors, watch, setValue, getMaterialTemplate, on
                             {...field}
                             labelId={`aguja-label-${index}`}
                             label="Número de Aguja"
+                            onChange={(e) => {
+                              // Llamar al original onChange del field
+                              field.onChange(e);
+                              
+                              // Si se proporcionó la función onNeedleSelect, llamarla con el índice y el valor seleccionado
+                              // también debe llamarse cuando el valor es vacío (deselección)
+                              if (onNeedleSelect) {
+                                onNeedleSelect(index, e.target.value);
+                              }
+                            }}
                           >
                             <MenuItem value="">Seleccione una aguja</MenuItem>
                             {/* Filtramos el inventario para mostrar solo las agujas del fabricante actual
