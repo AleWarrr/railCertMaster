@@ -52,7 +52,8 @@ const useCertificateForm = ({ initialMaterialType } = {}) => {
     handleSubmit, 
     setValue, 
     watch, 
-    reset, 
+    reset,
+    register,
     formState: { errors, isDirty } 
   } = useForm({
     defaultValues: {
@@ -60,7 +61,10 @@ const useCertificateForm = ({ initialMaterialType } = {}) => {
       certificateNumber: '',
       materialType: '',
       customerName: '',
-      customerReference: '',
+      customerNif: '',
+      customerLocation: '',
+      customerQualityManager: '',
+      customerQualityEmail: '',
       batchNumber: '',
       date: new Date().toISOString().split('T')[0],
       createdAt: new Date().toISOString(),
@@ -68,7 +72,7 @@ const useCertificateForm = ({ initialMaterialType } = {}) => {
       chemicalComposition: [],
       mechanicalProperties: [],
       comments: '',
-      attachments: [],
+      attachments: {},
       selectedNeedles: [],
       hardnessTestPdfs: [],
       particleTestPdfs: []
@@ -270,6 +274,16 @@ const useCertificateForm = ({ initialMaterialType } = {}) => {
     }
   }, [watchMaterialType, materialType, setValue, isEditMode]);
 
+  // Registrar los campos obligatorios y sus reglas de validación
+  useEffect(() => {
+    register('certificateNumber', { required: 'El número de certificado es obligatorio' });
+    register('materialType', { required: 'Debe seleccionar un tipo de material' });
+    register('customerId', { required: 'Debe seleccionar un cliente' });
+    register('inspectorId', { required: 'Debe seleccionar un inspector' });
+    register('batchNumber', { required: 'El número de lote es obligatorio' });
+    register('date', { required: 'La fecha es obligatoria' });
+  }, [register]);
+
   // Detectar selección de agujas y actualizar
   const handleNeedleSelection = (fieldIndex, needleId) => {
     console.log(`Aguja seleccionada en campo ${fieldIndex}: ${needleId}`);
@@ -302,6 +316,83 @@ const useCertificateForm = ({ initialMaterialType } = {}) => {
 
   // Navegación entre pasos
   const handleNext = () => {
+    // Validación específica para cada paso
+    if (activeStep === 0) {
+      // Para el Paso 1: Información General
+      const requiredFields = ['certificateNumber', 'materialType', 'customerId', 'inspectorId', 'batchNumber', 'date'];
+      const missingFields = requiredFields.filter(field => !watch(field));
+      
+      if (missingFields.length > 0) {
+        setSnackbar({
+          open: true,
+          message: 'Por favor, complete todos los campos obligatorios antes de continuar',
+          severity: 'error'
+        });
+        
+        // Marcar los campos como tocados para mostrar errores
+        missingFields.forEach(field => {
+          setValue(field, watch(field), { 
+            shouldValidate: true,
+            shouldDirty: true,
+            shouldTouch: true
+          });
+        });
+        
+        return;
+      }
+    } else if (activeStep === 1) {
+      // Para el Paso 2: Datos Técnicos
+      // Validar que al menos una aguja esté seleccionada para el material "aguja"
+      if (materialType === 'aguja') {
+        const needles = watch('needles') || [];
+        const hasSelectedNeedles = needles.some(needle => needle.serial_number);
+        
+        if (!hasSelectedNeedles) {
+          setSnackbar({
+            open: true,
+            message: 'Debe seleccionar al menos una aguja antes de continuar',
+            severity: 'error'
+          });
+          return;
+        }
+      }
+    } else if (activeStep === 2) {
+      // Para el Paso 3: Documentos
+      if (materialType === 'aguja') {
+        const templatePdf = watch('attachments.templatePdf');
+        const hardnessTestPdfs = watch('hardnessTestPdfs') || [];
+        const particleTestPdfs = watch('particleTestPdfs') || [];
+        
+        if (!templatePdf) {
+          setSnackbar({
+            open: true,
+            message: 'Debe subir la planilla PDF antes de continuar',
+            severity: 'error'
+          });
+          return;
+        }
+        
+        if (hardnessTestPdfs.length === 0) {
+          setSnackbar({
+            open: true,
+            message: 'Debe subir al menos un PDF de ensayo de dureza antes de continuar',
+            severity: 'error'
+          });
+          return;
+        }
+        
+        if (particleTestPdfs.length === 0) {
+          setSnackbar({
+            open: true,
+            message: 'Debe subir al menos un PDF de ensayo de partículas antes de continuar',
+            severity: 'error'
+          });
+          return;
+        }
+      }
+    }
+    
+    // Si pasa todas las validaciones, avanzar al siguiente paso
     setActiveStep((prevStep) => prevStep + 1);
   };
 

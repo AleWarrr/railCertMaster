@@ -171,19 +171,8 @@ const CertificateForm = ({ initialMaterialType }) => {
             startIcon={<SaveIcon />}
             onClick={handleSubmit(saveCertificate)}
             disabled={saving}
-            sx={{ mr: 1 }}
           >
             Guardar
-          </Button>
-          
-          <Button
-            variant="contained"
-            color="secondary"
-            startIcon={<PreviewIcon />}
-            onClick={() => handleSubmit(handleNavigateToPreview)()}
-            disabled={saving}
-          >
-            Vista Previa
           </Button>
         </Box>
       </Box>
@@ -205,13 +194,17 @@ const CertificateForm = ({ initialMaterialType }) => {
                   </Step>
                 ))}
               </Stepper>
+              
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+                Los campos marcados con asterisco (*) son obligatorios.
+              </Typography>
 
               {/* Paso 1: Información General */}
               {activeStep === 0 && (
                 <Grid container spacing={3}>
                   <Grid item xs={12} md={4}>
                     <TextField
-                      label="Número de Certificado"
+                      label="Número de Certificado *"
                       fullWidth
                       name="certificateNumber"
                       variant="outlined"
@@ -226,7 +219,7 @@ const CertificateForm = ({ initialMaterialType }) => {
                   
                   <Grid item xs={12} md={4}>
                     <TextField
-                      label="Número de Lote"
+                      label="Número de Lote *"
                       fullWidth
                       name="batchNumber"
                       variant="outlined"
@@ -240,7 +233,7 @@ const CertificateForm = ({ initialMaterialType }) => {
                   
                   <Grid item xs={12} md={4}>
                     <TextField
-                      label="Fecha"
+                      label="Fecha *"
                       type="date"
                       fullWidth
                       name="date"
@@ -256,10 +249,10 @@ const CertificateForm = ({ initialMaterialType }) => {
                   
                   <Grid item xs={12} md={6}>
                     <FormControl fullWidth variant="outlined" margin="normal" error={!!errors.materialType}>
-                      <InputLabel id="material-type-label">Tipo de Material</InputLabel>
+                      <InputLabel id="material-type-label">Tipo de Material *</InputLabel>
                       <Select
                         labelId="material-type-label"
-                        label="Tipo de Material"
+                        label="Tipo de Material *"
                         disabled={!!initialMaterialType || isEditMode}
                         value={watch('materialType') || ''}
                         onChange={(e) => form.setValue('materialType', e.target.value)}
@@ -285,10 +278,10 @@ const CertificateForm = ({ initialMaterialType }) => {
                   
                   <Grid item xs={12} md={6}>
                     <FormControl fullWidth variant="outlined" margin="normal" error={!!errors.customerId}>
-                      <InputLabel id="cliente-label">Cliente</InputLabel>
+                      <InputLabel id="cliente-label">Cliente *</InputLabel>
                       <Select
                         labelId="cliente-label"
-                        label="Cliente"
+                        label="Cliente *"
                         value={watch('customerId') || ''}
                         onChange={(e) => {
                           form.setValue('customerId', e.target.value);
@@ -296,7 +289,10 @@ const CertificateForm = ({ initialMaterialType }) => {
                           const cliente = customers.find(c => c.id === parseInt(e.target.value));
                           if (cliente) {
                             form.setValue('customerName', cliente.nombre || '');
-                            form.setValue('customerNumber', cliente.customer_number || '');
+                            form.setValue('customerNif', cliente.nif || '');
+                            form.setValue('customerLocation', cliente.ubicacion || '');
+                            form.setValue('customerQualityManager', cliente.responsable_calidad || '');
+                            form.setValue('customerQualityEmail', cliente.email_responsable_calidad || '');
                           }
                         }}
                       >
@@ -326,13 +322,13 @@ const CertificateForm = ({ initialMaterialType }) => {
                               <strong>NIF:</strong> {customer.nif || 'No disponible'}
                             </Typography>
                             <Typography variant="body2">
-                              <strong>Localización:</strong> {customer.ubicacion || 'No disponible'}
+                              <strong>Ubicación:</strong> {customer.ubicacion || 'No disponible'}
                             </Typography>
                             <Typography variant="body2">
-                              <strong>Email:</strong> {customer.email || 'No disponible'}
+                              <strong>Responsable de Calidad:</strong> {customer.responsable_calidad || 'No disponible'}
                             </Typography>
                             <Typography variant="body2">
-                              <strong>Teléfono:</strong> {customer.telefono || 'No disponible'}
+                              <strong>Email Resp. Calidad:</strong> {customer.email_responsable_calidad || 'No disponible'}
                             </Typography>
                           </Box>
                         ))}
@@ -349,10 +345,10 @@ const CertificateForm = ({ initialMaterialType }) => {
                   
                   <Grid item xs={12} md={6}>
                     <FormControl fullWidth variant="outlined" margin="normal" error={!!errors.inspectorId}>
-                      <InputLabel id="inspector-label">Inspector</InputLabel>
+                      <InputLabel id="inspector-label">Inspector *</InputLabel>
                       <Select
                         labelId="inspector-label"
-                        label="Inspector"
+                        label="Inspector *"
                         value={watch('inspectorId') || ''}
                         onChange={(e) => {
                           form.setValue('inspectorId', e.target.value);
@@ -533,10 +529,7 @@ const CertificateForm = ({ initialMaterialType }) => {
                             <Typography variant="subtitle2">Cliente:</Typography>
                             <Typography variant="body2">{watch('customerName') || 'N/A'}</Typography>
                           </Grid>
-                          <Grid item xs={12} md={6}>
-                            <Typography variant="subtitle2">Referencia del Cliente:</Typography>
-                            <Typography variant="body2">{watch('customerReference') || 'N/A'}</Typography>
-                          </Grid>
+                          
                           <Grid item xs={12} md={6}>
                             <Typography variant="subtitle2">Número de Lote:</Typography>
                             <Typography variant="body2">{watch('batchNumber') || 'N/A'}</Typography>

@@ -166,7 +166,7 @@ const AttachmentsManager = ({
       <Grid container spacing={3}>
         <Grid item xs={12} md={4}>
           <FileUploader
-            label="PDF Planilla"
+            label="PDF Planilla *"
             value={watch('attachments.templatePdf')}
             onFileSelected={(file) => setValue('attachments.templatePdf', file)}
             onClear={() => setValue('attachments.templatePdf', null)}
@@ -178,7 +178,7 @@ const AttachmentsManager = ({
         <Grid item xs={12} md={4}>
           <Box sx={{ border: '1px dashed grey', p: 2, borderRadius: 1 }}>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-              <Typography variant="subtitle2">PDFs Ensayo Dureza</Typography>
+              <Typography variant="subtitle2">PDFs Ensayo Dureza *</Typography>
               <Button
                 variant="outlined"
                 size="small"
@@ -232,7 +232,7 @@ const AttachmentsManager = ({
         <Grid item xs={12} md={4}>
           <Box sx={{ border: '1px dashed grey', p: 2, borderRadius: 1 }}>
             <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-              <Typography variant="subtitle2">PDFs Ensayo Partículas</Typography>
+              <Typography variant="subtitle2">PDFs Ensayo Partículas *</Typography>
               <Button
                 variant="outlined"
                 size="small"

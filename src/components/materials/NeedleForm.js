@@ -60,40 +60,50 @@ const NeedleFormImplementation = createMaterialForm({
     };
     
     return (
-      <Grid item xs={12}>
-        <NeedlesForm 
-          control={control} 
-          errors={errors} 
-          watch={watch} 
-          setValue={setValue} 
-          onNext={handleNext}
-          hideComments={true}
-          onNeedleSelect={handleNeedleSelection}
-          needleInventory={needleInventory}
-        />
-        
-        {/* 
-          NOTA: Esta sección está temporalmente deshabilitada.
-          La matriz de asignación de PDFs a agujas será responsabilidad del inspector, no del fabricante.
-          Este código se conserva para implementarlo en la UI del inspector posteriormente.
-        
-        {hasSelectedNeedles && (
-          <>
-            <Typography variant="h6" gutterBottom sx={{ mt: 4, mb: 2 }}>
-              Asignación de PDFs a Agujas
-            </Typography>
-            <Divider sx={{ mb: 2 }} />
-            <PDFAssignmentMatrix 
-              needles={needles}
-              hardnessTestPdfs={watch('hardnessTestPdfs') || []}
-              particleTestPdfs={watch('particleTestPdfs') || []}
-              needleInventory={needleInventory}
-              setValue={setValue}
-            />
-          </>
-        )}
-        */}
-      </Grid>
+      <div>
+        <Box mb={2}>
+          <Typography variant="subtitle1" gutterBottom>
+            Selección de agujas *
+          </Typography>
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            Seleccione al menos una aguja para continuar
+          </Typography>
+        </Box>
+        <Grid item xs={12}>
+          <NeedlesForm 
+            control={control} 
+            errors={errors} 
+            watch={watch} 
+            setValue={setValue} 
+            onNext={handleNext}
+            hideComments={true}
+            onNeedleSelect={handleNeedleSelection}
+            needleInventory={needleInventory}
+          />
+          
+          {/* 
+            NOTA: Esta sección está temporalmente deshabilitada.
+            La matriz de asignación de PDFs a agujas será responsabilidad del inspector, no del fabricante.
+            Este código se conserva para implementarlo en la UI del inspector posteriormente.
+          
+          {hasSelectedNeedles && (
+            <>
+              <Typography variant="h6" gutterBottom sx={{ mt: 4, mb: 2 }}>
+                Asignación de PDFs a Agujas
+              </Typography>
+              <Divider sx={{ mb: 2 }} />
+              <PDFAssignmentMatrix 
+                needles={needles}
+                hardnessTestPdfs={watch('hardnessTestPdfs') || []}
+                particleTestPdfs={watch('particleTestPdfs') || []}
+                needleInventory={needleInventory}
+                setValue={setValue}
+              />
+            </>
+          )}
+          */}
+        </Grid>
+      </div>
     );
   },
   
